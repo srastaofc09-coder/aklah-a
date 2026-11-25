@@ -1,0 +1,18 @@
+package com.aklah.ai;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class ProjectItem {
+
+    public String id;
+    public String name;
+    public long createdAt;
+    public List<String> mediaUris = new ArrayList<>();
+
+    public ProjectItem(String id, String name, long createdAt) {
+        this.id = id;
+        this.name = name;
+        this.createdAt = createdAt;
+    }
+}
