@@ -16,6 +16,10 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".NewProjectActivity"
+            android:exported="false" />
+
     </application>
 
 </manifest>
