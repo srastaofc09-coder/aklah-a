@@ -896,11 +896,24 @@ public class EditorActivity extends AppCompatActivity {
                         final String[] transitions = {"None", "Crossfade", "Dip to Black", "Wipe"};
                         new AlertDialog.Builder(this).setTitle("Transition Type")
                                 .setSingleChoiceItems(transitions, c.transitionType, (d, selected) -> {
-                                    pushUndo(); c.transitionType = selected;
-                                    c.transitionDurationMs = selected == 0 ? 0L : 500L;
-                                    saveProject(false); refreshStrip();
-                                    d.dismiss();
-                                    toast(selected == 0 ? "Transition removed" : "Transition saved; export renders boundary fade/wipe (crossfade uses black-fade approximation).");
+                                    pushUndo();
+                                    c.transitionType = selected;
+                                    if (selected == 0) {
+                                        c.transitionDurationMs = 0L;
+                                        saveProject(false); refreshStrip(); d.dismiss();
+                                        toast("Transition removed");
+                                        return;
+                                    }
+                                    c.transitionDurationMs = 500L;
+                                    saveProject(false); refreshStrip(); d.dismiss();
+                                    final String[] durations = {"250 ms", "500 ms", "750 ms", "1 second"};
+                                    new AlertDialog.Builder(this).setTitle("Transition Duration")
+                                            .setSingleChoiceItems(durations, 1, (dd, duration) -> {
+                                                long[] values = {250L, 500L, 750L, 1000L};
+                                                c.transitionDurationMs = values[duration];
+                                                saveProject(false); refreshStrip(); dd.dismiss();
+                                                toast("Transition saved; export renders fade/wipe. Crossfade is a black-fade approximation.");
+                                            }).setNegativeButton("Keep 500 ms", null).show();
                                 }).setNegativeButton("Cancel", null).show();
                     } else if (which == 1) {
                         LinearLayout box = new LinearLayout(this);
