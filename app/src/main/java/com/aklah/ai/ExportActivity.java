@@ -26,6 +26,7 @@ import androidx.media3.effect.Brightness;
 import androidx.media3.effect.Contrast;
 import androidx.media3.effect.Saturation;
 import androidx.media3.effect.ScaleAndRotateTransformation;
+import androidx.media3.effect.SpeedChangeEffect;
 import androidx.media3.transformer.Composition;
 import androidx.media3.transformer.DefaultEncoderFactory;
 import androidx.media3.transformer.EditedMediaItem;
@@ -178,6 +179,7 @@ public class ExportActivity extends AppCompatActivity {
                         .setRotationDegrees(c.rotationDegrees)
                         .build());
             }
+            if (Math.abs(c.speed - 1f) > 0.001f) video.add(new SpeedChangeEffect(c.speed));
             if (Math.abs(c.brightness) > 0.001f) video.add(new Brightness(c.brightness));
             if (Math.abs(c.contrast - 1f) > 0.001f) video.add(new Contrast(c.contrast));
             if (Math.abs(c.saturation - 1f) > 0.001f) video.add(new Saturation(c.saturation));
