@@ -20,6 +20,10 @@
             android:name=".NewProjectActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".EditorActivity"
+            android:exported="false" />
+
     </application>
 
 </manifest>
