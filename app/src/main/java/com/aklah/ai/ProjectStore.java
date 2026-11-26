@@ -73,6 +73,7 @@ public class ProjectStore {
                         JSONObject a = audioTracks.getJSONObject(j);
                         AudioTrackItem track = new AudioTrackItem(a.getString("uri"));
                         track.volume = (float) a.optDouble("volume", 1.0);
+                        track.startMs = a.optLong("startMs", 0L);
                         track.muted = a.optBoolean("muted", false);
                         p.audioTracks.add(track);
                     }
@@ -171,6 +172,7 @@ public class ProjectStore {
                     JSONObject ao = new JSONObject();
                     ao.put("uri", track.uri);
                     ao.put("volume", track.volume);
+                    ao.put("startMs", track.startMs);
                     ao.put("muted", track.muted);
                     audioTracks.put(ao);
                 }
