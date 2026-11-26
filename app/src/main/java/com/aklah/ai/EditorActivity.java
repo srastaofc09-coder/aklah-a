@@ -22,6 +22,7 @@ import androidx.media3.common.MediaItem;
 import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
 import androidx.media3.common.Timeline;
+import androidx.media3.common.VideoSize;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.ui.PlayerView;
 
@@ -35,6 +36,7 @@ import java.util.Locale;
 public class EditorActivity extends AppCompatActivity {
 
     public static final String EXTRA_PROJECT_ID = "project_id";
+    public static final String EXTRA_PREVIEW_W = "preview_w";
 
     private ExoPlayer player;
     private ProjectItem project;
@@ -208,6 +210,32 @@ public class EditorActivity extends AppCompatActivity {
             }
         }
         return total + Math.max(0, player.getCurrentPosition());
+    }
+
+    // Video asal mein overlay ke kis hisse mein dikh rahi hai: left, top, width, height
+    private float[] videoRect() {
+        int ow = overlay == null ? 0 : overlay.getWidth();
+        int oh = overlay == null ? 0 : overlay.getHeight();
+        float fw = Math.max(1, ow);
+        float fh = Math.max(1, oh);
+        if (player == null || ow <= 0 || oh <= 0) {
+            return new float[]{0, 0, fw, fh};
+        }
+        VideoSize vs = player.getVideoSize();
+        if (vs.width <= 0 || vs.height <= 0) {
+            return new float[]{0, 0, fw, fh};
+        }
+        float vw = vs.width * vs.pixelWidthHeightRatio;
+        float vh = vs.height;
+        if (vs.unappliedRotationDegrees == 90 || vs.unappliedRotationDegrees == 270) {
+            float tmp = vw;
+            vw = vh;
+            vh = tmp;
+        }
+        float s = Math.min(ow / vw, oh / vh);
+        float w = vw * s;
+        float h = vh * s;
+        return new float[]{(ow - w) / 2f, (oh - h) / 2f, w, h};
     }
 
     // ---------- Clip edit actions ----------
@@ -444,11 +472,10 @@ public class EditorActivity extends AppCompatActivity {
                 case MotionEvent.ACTION_UP:
                 case MotionEvent.ACTION_CANCEL:
                     dragging = false;
-                    int w = overlay.getWidth();
-                    int h = overlay.getHeight();
-                    if (moved[0] && w > 0 && h > 0) {
-                        l.xFrac = clamp((v.getX() + v.getWidth() / 2f) / w);
-                        l.yFrac = clamp((v.getY() + v.getHeight() / 2f) / h);
+                    float[] r = videoRect();
+                    if (moved[0] && r[2] > 0 && r[3] > 0) {
+                        l.xFrac = clamp((v.getX() + v.getWidth() / 2f - r[0]) / r[2]);
+                        l.yFrac = clamp((v.getY() + v.getHeight() / 2f - r[1]) / r[3]);
                         saveProject(false);
                     } else if (e.getActionMasked() == MotionEvent.ACTION_UP) {
                         editText(l);
@@ -468,19 +495,20 @@ public class EditorActivity extends AppCompatActivity {
         if (overlay == null) {
             return;
         }
+        float[] r = videoRect();
+        int mw = (int) (r[2] * 0.9f);
         long t = timelineMs();
         for (int i = 0; i < texts.size() && i < textViews.size(); i++) {
             TextLayer l = texts.get(i);
             TextView tv = textViews.get(i);
+            if (mw > 0 && tv.getMaxWidth() != mw) {
+                tv.setMaxWidth(mw);
+            }
             boolean show = t >= l.startMs && (l.endMs < 0 || t < l.endMs);
             tv.setVisibility(show ? View.VISIBLE : View.INVISIBLE);
-            if (show && !dragging) {
-                int w = overlay.getWidth();
-                int h = overlay.getHeight();
-                if (w > 0 && h > 0 && tv.getWidth() > 0) {
-                    tv.setX(l.xFrac * w - tv.getWidth() / 2f);
-                    tv.setY(l.yFrac * h - tv.getHeight() / 2f);
-                }
+            if (show && !dragging && tv.getWidth() > 0) {
+                tv.setX(r[0] + l.xFrac * r[2] - tv.getWidth() / 2f);
+                tv.setY(r[1] + l.yFrac * r[3] - tv.getHeight() / 2f);
             }
         }
     }
@@ -504,6 +532,7 @@ public class EditorActivity extends AppCompatActivity {
         saveProject(false);
         Intent i = new Intent(this, ExportActivity.class);
         i.putExtra(EXTRA_PROJECT_ID, project.id);
+        i.putExtra(EXTRA_PREVIEW_W, videoRect()[2]);
         startActivity(i);
     }
 
