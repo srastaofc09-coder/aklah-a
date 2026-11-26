@@ -847,6 +847,12 @@ public class EditorActivity extends AppCompatActivity {
                 .setTitle("Quick Filter Presets")
                 .setItems(names, (dialog, which) -> {
                     pushUndo();
+                    // Every preset starts from a clean baseline so previous RGB/blur
+                    // settings cannot accidentally leak into the next selected preset.
+                    clip.redScale = 1f;
+                    clip.greenScale = 1f;
+                    clip.blueScale = 1f;
+                    clip.blurSigma = 0f;
                     switch (which) {
                         case 0: clip.brightness=0f; clip.contrast=1f; clip.saturation=1f; break;
                         case 1: clip.brightness=0f; clip.contrast=1.12f; clip.saturation=0f; break;
