@@ -231,7 +231,19 @@ public class ExportActivity extends AppCompatActivity {
         }
 
         EditedMediaItemSequence sequence = new EditedMediaItemSequence(items);
-        Composition composition = new Composition.Builder(sequence).build();
+        Composition.Builder compositionBuilder = new Composition.Builder(sequence);
+
+        // Render project text layers into the final MP4 across the composition timeline.
+        float previewW = getIntent().getFloatExtra(EditorActivity.EXTRA_PREVIEW_W, 0f);
+        androidx.media3.effect.OverlayEffect textOverlay = TextOverlayBuilder.build(
+                this, project.texts, height > 0 ? height : 1080, previewW);
+        if (textOverlay != null) {
+            List<Effect> compositionVideoEffects = new ArrayList<>();
+            compositionVideoEffects.add(textOverlay);
+            compositionBuilder.setEffects(new Effects(
+                    Collections.emptyList(), compositionVideoEffects));
+        }
+        Composition composition = compositionBuilder.build();
 
         outFile = new File(getCacheDir(), "export_" + System.currentTimeMillis() + ".mp4");
 
