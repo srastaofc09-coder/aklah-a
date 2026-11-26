@@ -576,11 +576,61 @@ public class EditorActivity extends AppCompatActivity {
                         case 3: addStyledOverlay("Name • Description", 24, 0xFFFFFFFF, 0x99000000, 0.28f, 0.78f, 1); break;
                         case 4: addSubtitleAtPlayhead(); break;
                         case 5: addStyledOverlay("© AKLAH AI", 16, 0xCCFFFFFF, 0x55000000, 0.82f, 0.92f, 2); break;
-                        case 6: chooseTextForTool(2); break;
+                        case 6: chooseTextAnimation(); break;
                         case 7: showAdvancedClipTools(); break;
                         case 8: showMoreTools(); break;
                     }
                 }).show();
+    }
+
+    private void chooseTextAnimation() {
+        if (texts.isEmpty()) {
+            toast("Pehle + Text se text layer banayein");
+            return;
+        }
+        String[] layers = new String[texts.size()];
+        for (int i = 0; i < texts.size(); i++) {
+            String value = texts.get(i).text.replace('\n', ' ');
+            if (value.length() > 22) value = value.substring(0, 22) + "...";
+            layers[i] = (i + 1) + ". " + value;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("Kis text ko animate karein?")
+                .setItems(layers, (d, which) -> showTextAnimationOptions(texts.get(which)))
+                .show();
+    }
+
+    private void showTextAnimationOptions(final TextLayer layer) {
+        final String[] names = {"None", "Fade In", "Slide Up + Fade", "Zoom In + Fade", "Fade In + Fade Out"};
+        new AlertDialog.Builder(this)
+                .setTitle("Text Animation • Export")
+                .setItems(names, (d, which) -> {
+                    if (which == 0) {
+                        pushUndo();
+                        layer.animationMode = 0;
+                        layer.animationDurationMs = 600L;
+                        rebuildOverlay();
+                        saveProject(false);
+                        toast("Text animation off");
+                        return;
+                    }
+                    final long[] durations = {300L, 600L, 1000L, 1500L, 2000L};
+                    final String[] durationLabels = {"0.3 sec", "0.6 sec", "1 sec", "1.5 sec", "2 sec"};
+                    new AlertDialog.Builder(this)
+                            .setTitle("Animation duration")
+                            .setSingleChoiceItems(durationLabels, 1, (dialog, durationIndex) -> {
+                                pushUndo();
+                                layer.animationMode = which;
+                                layer.animationDurationMs = durations[durationIndex];
+                                rebuildOverlay();
+                                saveProject(false);
+                                dialog.dismiss();
+                                toast("Text animation save ho gayi; MP4 export mein apply hogi");
+                            })
+                            .setNegativeButton("Cancel", null)
+                            .show();
+                })
+                .show();
     }
 
     private void addSubtitleAtPlayhead() {
