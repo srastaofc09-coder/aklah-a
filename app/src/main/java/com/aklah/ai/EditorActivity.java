@@ -1,5 +1,6 @@
 package com.aklah.ai;
 
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.Gravity;
@@ -70,6 +71,7 @@ public class EditorActivity extends AppCompatActivity {
         addButton(r2, "Undo", () -> undo());
         addButton(r2, "Redo", () -> redo());
         addButton(r3, "Project Save Karein", () -> saveProject(true));
+        addButton(r3, "Export MP4", () -> openExport());
     }
 
     @Override
@@ -270,6 +272,13 @@ public class EditorActivity extends AppCompatActivity {
         if (show) {
             toast("Project save ho gaya");
         }
+    }
+
+    private void openExport() {
+        saveProject(false);
+        Intent i = new Intent(this, ExportActivity.class);
+        i.putExtra(EXTRA_PROJECT_ID, project.id);
+        startActivity(i);
     }
 
     private String sec(long ms) {
