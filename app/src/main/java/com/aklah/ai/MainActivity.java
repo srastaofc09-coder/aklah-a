@@ -71,6 +71,10 @@ public class MainActivity extends AppCompatActivity {
         findViewById(viewId).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                if ("AI Studio".equals(name)) {
+                    startActivity(new Intent(MainActivity.this, AIStudioActivity.class));
+                    return;
+                }
                 Toast.makeText(MainActivity.this,
                         name + " (agle round mein aayega)",
                         Toast.LENGTH_SHORT).show();
