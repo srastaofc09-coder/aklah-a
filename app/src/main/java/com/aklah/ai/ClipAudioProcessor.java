@@ -81,7 +81,7 @@ public final class ClipAudioProcessor extends BaseAudioProcessor {
     }
 
     @Override
-    protected void onFlush(AudioProcessor.StreamMetadata streamMetadata) {
+    protected void onFlush() {
         processedFrames = 0L;
     }
 
