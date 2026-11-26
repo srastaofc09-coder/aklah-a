@@ -966,11 +966,16 @@ public class EditorActivity extends AppCompatActivity {
                                     }
                                 }).setNegativeButton("Cancel", null).show();
                     } else if (which == 2) {
-                        final String[] modes = {"Disable mask", "Rectangle cover", "Circle cover", "Blur region (solid privacy cover in export)"};
+                        final String[] modes = {"Disable mask", "Rectangle cover", "Circle cover", "Blur region (privacy cover)"};
                         new AlertDialog.Builder(this).setTitle("Manual Mask Mode").setItems(modes, (d, mode) -> {
-                            pushUndo(); c.maskEnabled = mode != 0; c.maskMode = Math.max(0, mode - 1);
-                            saveProject(false); refreshStrip();
-                            toast(mode == 0 ? "Mask disabled" : "Mask saved; cover renders in export. Preview positioning is not connected yet.");
+                            pushUndo();
+                            c.maskEnabled = mode != 0;
+                            c.maskMode = Math.max(0, mode - 1);
+                            if (mode == 0) {
+                                saveProject(false); refreshStrip(); toast("Mask disabled");
+                            } else {
+                                editMaskBounds(c);
+                            }
                         }).show();
                     } else if (which == 3) {
                         showAdvancedClipTools();
@@ -978,6 +983,43 @@ public class EditorActivity extends AppCompatActivity {
                         showColorAdjustments(c);
                     }
                 }).show();
+    }
+
+    private void editMaskBounds(ClipItem clip) {
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(16), dp(8), dp(16), dp(4));
+        android.widget.EditText x = new android.widget.EditText(this);
+        android.widget.EditText y = new android.widget.EditText(this);
+        android.widget.EditText w = new android.widget.EditText(this);
+        android.widget.EditText h = new android.widget.EditText(this);
+        x.setHint("Left X 0.0–1.0"); y.setHint("Top Y 0.0–1.0");
+        w.setHint("Width 0.05–1.0"); h.setHint("Height 0.05–1.0");
+        x.setInputType(8194); y.setInputType(8194); w.setInputType(8194); h.setInputType(8194);
+        x.setText(String.valueOf(clip.maskX)); y.setText(String.valueOf(clip.maskY));
+        w.setText(String.valueOf(clip.maskWidth)); h.setText(String.valueOf(clip.maskHeight));
+        box.addView(x); box.addView(y); box.addView(w); box.addView(h);
+        new AlertDialog.Builder(this).setTitle("Mask Position & Size")
+                .setMessage("Normalized video coordinates: 0 is left/top, 1 is right/bottom.")
+                .setView(box)
+                .setPositiveButton("Save Mask", (d, which) -> {
+                    try {
+                        float nx = Float.parseFloat(x.getText().toString());
+                        float ny = Float.parseFloat(y.getText().toString());
+                        float nw = Float.parseFloat(w.getText().toString());
+                        float nh = Float.parseFloat(h.getText().toString());
+                        clip.maskX = Math.max(0f, Math.min(0.95f, nx));
+                        clip.maskY = Math.max(0f, Math.min(0.95f, ny));
+                        clip.maskWidth = Math.max(0.05f, Math.min(1f - clip.maskX, nw));
+                        clip.maskHeight = Math.max(0.05f, Math.min(1f - clip.maskY, nh));
+                        saveProject(false); refreshStrip();
+                        toast("Mask bounds saved and applied in MP4 export");
+                    } catch (Exception ex) {
+                        toast("X/Y/Width/Height ke liye 0.0–1.0 values enter karein");
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     private long clipDurationMs(ClipItem c) {
