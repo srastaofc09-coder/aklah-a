@@ -136,6 +136,11 @@ public class ExportActivity extends AppCompatActivity {
         return null;
     }
 
+    private boolean isAudio(String uri) {
+        String type = getContentResolver().getType(Uri.parse(uri));
+        return type != null && type.startsWith("audio/");
+    }
+
     private boolean isVideo(String uri) {
         String type = getContentResolver().getType(Uri.parse(uri));
         return type != null && type.startsWith("video/");
@@ -388,6 +393,24 @@ public class ExportActivity extends AppCompatActivity {
 
         EditedMediaItemSequence sequence = new EditedMediaItemSequence(items);
         Composition.Builder compositionBuilder = new Composition.Builder(sequence);
+
+        // Each independent music/audio layer is exported as its own parallel audio sequence.
+        for (AudioTrackItem track : project.audioTracks) {
+            if (track == null || track.uri == null || track.muted || track.volume <= 0f
+                    || !isAudio(track.uri)) continue;
+            MediaItem audioMedia = new MediaItem.Builder().setUri(Uri.parse(track.uri)).build();
+            EditedMediaItem.Builder audioItemBuilder = new EditedMediaItem.Builder(audioMedia);
+            audioItemBuilder.setRemoveVideo(true);
+            List<AudioProcessor> trackProcessors = new ArrayList<>();
+            if (track.volume < 0.999f) {
+                trackProcessors.add(new ClipAudioProcessor(track.volume, 0L, 0L, C.TIME_UNSET));
+            }
+            if (!trackProcessors.isEmpty()) {
+                audioItemBuilder.setEffects(new Effects(trackProcessors, Collections.emptyList()));
+            }
+            compositionBuilder.addSequence(new EditedMediaItemSequence(
+                    Collections.singletonList(audioItemBuilder.build())));
+        }
 
         // Render project text layers into the final MP4 across the composition timeline.
         float previewW = getIntent().getFloatExtra(EditorActivity.EXTRA_PREVIEW_W, 0f);
