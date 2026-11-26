@@ -22,6 +22,10 @@ import androidx.media3.common.Effect;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.audio.AudioProcessor;
 import androidx.media3.effect.Presentation;
+import androidx.media3.effect.Brightness;
+import androidx.media3.effect.Contrast;
+import androidx.media3.effect.Saturation;
+import androidx.media3.effect.ScaleAndRotateTransformation;
 import androidx.media3.transformer.Composition;
 import androidx.media3.transformer.DefaultEncoderFactory;
 import androidx.media3.transformer.EditedMediaItem;
@@ -168,11 +172,25 @@ public class ExportActivity extends AppCompatActivity {
                     .build();
             EditedMediaItem.Builder eb = new EditedMediaItem.Builder(mi);
             eb.setRemoveAudio(c.muted);
-            if (height > 0) {
-                List<Effect> video = new ArrayList<>();
-                video.add(Presentation.createForHeight(height));
-                eb.setEffects(new Effects(
-                        Collections.<AudioProcessor>emptyList(), video));
+            List<Effect> video = new ArrayList<>();
+            if (c.rotationDegrees != 0) {
+                video.add(new ScaleAndRotateTransformation.Builder()
+                        .setRotationDegrees(c.rotationDegrees)
+                        .build());
+            }
+            if (Math.abs(c.brightness) > 0.001f) video.add(new Brightness(c.brightness));
+            if (Math.abs(c.contrast - 1f) > 0.001f) video.add(new Contrast(c.contrast));
+            if (Math.abs(c.saturation - 1f) > 0.001f) video.add(new Saturation(c.saturation));
+            if (c.cropMode == 1) {
+                video.add(Presentation.createForAspectRatio(9f / 16f, Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP));
+            } else if (c.cropMode == 2) {
+                video.add(Presentation.createForAspectRatio(1f, Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP));
+            } else if (c.cropMode == 3) {
+                video.add(Presentation.createForAspectRatio(16f / 9f, Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP));
+            }
+            if (height > 0) video.add(Presentation.createForHeight(height));
+            if (!video.isEmpty()) {
+                eb.setEffects(new Effects(Collections.<AudioProcessor>emptyList(), video));
             }
             items.add(eb.build());
         }
