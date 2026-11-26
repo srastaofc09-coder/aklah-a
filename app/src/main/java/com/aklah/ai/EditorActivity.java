@@ -1613,6 +1613,11 @@ public class EditorActivity extends AppCompatActivity {
         panel.setPadding(dp(18), dp(12), dp(18), dp(8));
         TextView label = new TextView(this);
         label.setText("Track volume: " + Math.round(track.volume * 100f) + "%");
+        android.widget.EditText offset = new android.widget.EditText(this);
+        offset.setHint("Track start offset in seconds (0 = beginning)");
+        offset.setInputType(8194);
+        offset.setText(String.valueOf(track.startMs / 1000f));
+        panel.addView(offset);
         label.setTextColor(0xFFFFFFFF);
         SeekBar volume = new SeekBar(this);
         volume.setMax(100);
@@ -1641,6 +1646,9 @@ public class EditorActivity extends AppCompatActivity {
                 })
                 .setPositiveButton("Save", (d, w) -> {
                     track.volume = volume.getProgress() / 100f;
+                    try { track.startMs = Math.max(0L, Math.min(3600000L,
+                            (long) (Double.parseDouble(offset.getText().toString()) * 1000d))); }
+                    catch (Exception ignored) { }
                     saveProject(false);
                     manageAudioTracks();
                 })
