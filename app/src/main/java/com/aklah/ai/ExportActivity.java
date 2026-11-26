@@ -280,8 +280,11 @@ public class ExportActivity extends AppCompatActivity {
             if (c.transitionType > 0 && c.transitionDurationMs > 0L) {
                 final long transitionUs = Math.max(100_000L,
                         Math.min(2_000_000L, c.transitionDurationMs * 1000L));
-                final long durationUs = clipDurationUs == C.TIME_UNSET
-                        ? Math.max(transitionUs * 2L, 3_000_000L) : clipDurationUs;
+                final long transitionClipDurationUs = c.endMs > c.startMs
+                        ? (c.endMs - c.startMs) * 1000L : C.TIME_UNSET;
+                final long durationUs = transitionClipDurationUs == C.TIME_UNSET
+                        ? Math.max(transitionUs * 2L, 3_000_000L)
+                        : transitionClipDurationUs;
                 final int transitionMode = c.transitionType;
                 final Bitmap transitionBitmap = Bitmap.createBitmap(
                         1920, 1080, Bitmap.Config.ARGB_8888);
