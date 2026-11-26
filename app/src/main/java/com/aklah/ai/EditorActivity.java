@@ -101,6 +101,9 @@ public class EditorActivity extends AppCompatActivity {
         addButton(r2, "Redo", () -> redo());
         addButton(r4, "+ Text", () -> addText());
         addButton(r4, "Text Edit", () -> chooseTextToEdit());
+        LinearLayout r5 = findViewById(R.id.row5);
+        addButton(r5, "Duplicate Clip", () -> duplicateClip());
+        addButton(r5, "Mute / Unmute", () -> toggleClipMute());
         addButton(r3, "Project Save Karein", () -> saveProject(true));
         addButton(r3, "Export MP4", () -> openExport());
 
@@ -118,6 +121,7 @@ public class EditorActivity extends AppCompatActivity {
         player.addListener(new Player.Listener() {
             @Override
             public void onMediaItemTransition(MediaItem item, int reason) {
+                applyCurrentClipAudio();
                 refreshStrip();
             }
 
@@ -182,6 +186,7 @@ public class EditorActivity extends AppCompatActivity {
         }
         player.setMediaItems(items, index, posMs);
         player.prepare();
+        applyCurrentClipAudio();
         refreshStrip();
     }
 
@@ -288,6 +293,42 @@ public class EditorActivity extends AppCompatActivity {
         pushUndo();
         c.endMs = p;
         reload(i, Math.max(0, p - c.startMs - 1000));
+    }
+
+    private void duplicateClip() {
+        int i = currentIndex();
+        if (i < 0) {
+            toast("Pehle clip select karein");
+            return;
+        }
+        pushUndo();
+        ClipItem copy = clips.get(i).copy();
+        clips.add(i + 1, copy);
+        reload(i + 1, 0);
+        saveProject(false);
+        toast("Clip duplicate ho gayi");
+    }
+
+    private void toggleClipMute() {
+        int i = currentIndex();
+        if (i < 0) {
+            toast("Pehle clip select karein");
+            return;
+        }
+        pushUndo();
+        clips.get(i).muted = !clips.get(i).muted;
+        applyCurrentClipAudio();
+        refreshStrip();
+        saveProject(false);
+        toast(clips.get(i).muted ? "Clip muted" : "Clip ki audio on");
+    }
+
+    private void applyCurrentClipAudio() {
+        if (player == null) {
+            return;
+        }
+        int i = currentIndex();
+        player.setVolume(i >= 0 && clips.get(i).muted ? 0f : 1f);
     }
 
     private void deleteClip() {
