@@ -757,8 +757,8 @@ public class EditorActivity extends AppCompatActivity {
         if (c == null) return;
         final String[] tools = {
                 "Rotate 90°", "Rotate 180°", "Rotate 270°", "Reset Rotation",
-                "Crop / Aspect Ratio", "Playback Speed", "Color Adjustments",
-                "Quick Filter Presets", "Reset All Advanced Edits"
+                "Flip Horizontal", "Flip Vertical", "Crop / Aspect Ratio", "Playback Speed",
+                "Color Adjustments", "Quick Filter Presets", "Gaussian Blur", "Reset All Advanced Edits"
         };
         new AlertDialog.Builder(this)
                 .setTitle("ADVANCED CLIP LAB")
@@ -770,11 +770,14 @@ public class EditorActivity extends AppCompatActivity {
                         case 1: pushUndo(); clip.rotationDegrees = (clip.rotationDegrees + 180) % 360; break;
                         case 2: pushUndo(); clip.rotationDegrees = (clip.rotationDegrees + 270) % 360; break;
                         case 3: pushUndo(); clip.rotationDegrees = 0; break;
-                        case 4: chooseCropMode(clip); return;
-                        case 5: chooseClipSpeed(clip); return;
-                        case 6: showColorAdjustments(clip); return;
-                        case 7: chooseFilterPreset(clip); return;
-                        case 8:
+                        case 4: pushUndo(); clip.flipX = !clip.flipX; break;
+                        case 5: pushUndo(); clip.flipY = !clip.flipY; break;
+                        case 6: chooseCropMode(clip); return;
+                        case 7: chooseClipSpeed(clip); return;
+                        case 8: showColorAdjustments(clip); return;
+                        case 9: chooseFilterPreset(clip); return;
+                        case 10: chooseBlur(clip); return;
+                        case 11:
                             pushUndo();
                             clip.rotationDegrees = 0;
                             clip.cropMode = 0;
@@ -782,6 +785,12 @@ public class EditorActivity extends AppCompatActivity {
                             clip.brightness = 0f;
                             clip.contrast = 1f;
                             clip.saturation = 1f;
+                            clip.flipX = false;
+                            clip.flipY = false;
+                            clip.blurSigma = 0f;
+                            clip.redScale = 1f;
+                            clip.greenScale = 1f;
+                            clip.blueScale = 1f;
                             break;
                     }
                     saveProject(false);
@@ -821,7 +830,7 @@ public class EditorActivity extends AppCompatActivity {
                     if (player != null && currentIndex() >= 0) player.setPlaybackSpeed(clip.speed);
                     saveProject(false);
                     dialog.dismiss();
-                    toast("Preview speed set. Export speed processing needs a compatible transformer build.");
+                    toast("Speed preview aur MP4 export dono par apply hoga");
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
@@ -831,7 +840,8 @@ public class EditorActivity extends AppCompatActivity {
     private void chooseFilterPreset(ClipItem clip) {
         final String[] names = {
                 "Normal", "Black & White", "Cinematic", "Warm Film",
-                "Cool Blue", "Bright Clean", "Vintage Soft", "High Contrast"
+                "Cool Blue", "Bright Clean", "Vintage Soft", "High Contrast",
+                "Warm Amber", "Ice Blue", "Teal & Orange", "Soft Dream"
         };
         new AlertDialog.Builder(this)
                 .setTitle("Quick Filter Presets")
@@ -846,11 +856,46 @@ public class EditorActivity extends AppCompatActivity {
                         case 5: clip.brightness=0.18f; clip.contrast=1.02f; clip.saturation=1.08f; break;
                         case 6: clip.brightness=0.02f; clip.contrast=0.92f; clip.saturation=0.72f; break;
                         case 7: clip.brightness=-0.06f; clip.contrast=1.55f; clip.saturation=1.18f; break;
+                        case 8: clip.brightness=0.05f; clip.contrast=1.08f; clip.saturation=1.12f; clip.redScale=1.18f; clip.greenScale=1.02f; clip.blueScale=0.82f; break;
+                        case 9: clip.brightness=0.02f; clip.contrast=1.05f; clip.saturation=0.92f; clip.redScale=0.88f; clip.greenScale=1.02f; clip.blueScale=1.18f; break;
+                        case 10: clip.brightness=-0.02f; clip.contrast=1.2f; clip.saturation=1.1f; clip.redScale=1.15f; clip.greenScale=1.02f; clip.blueScale=0.88f; break;
+                        case 11: clip.brightness=0.08f; clip.contrast=0.9f; clip.saturation=0.78f; clip.blurSigma=2.0f; break;
                     }
                     saveProject(false);
                     toast("Filter save ho gaya; MP4 export par apply hoga");
                 })
                 .show();
+    }
+
+    private void chooseBlur(ClipItem clip) {
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(dp(18), dp(12), dp(18), dp(8));
+        TextView value = new TextView(this);
+        value.setText("Blur strength: " + clip.blurSigma);
+        value.setTextColor(0xFFFFD66B);
+        root.addView(value);
+        SeekBar bar = new SeekBar(this);
+        bar.setMax(100);
+        bar.setProgress(Math.round(clip.blurSigma * 10f));
+        bar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar seek, int progress, boolean fromUser) {
+                value.setText("Blur strength: " + String.format(Locale.ROOT, "%.1f", progress / 10f));
+            }
+            @Override public void onStartTrackingTouch(SeekBar seek) { }
+            @Override public void onStopTrackingTouch(SeekBar seek) { }
+        });
+        root.addView(bar);
+        new AlertDialog.Builder(this).setTitle("Gaussian Blur • Export Effect")
+                .setView(root)
+                .setPositiveButton("Apply", (d, w) -> {
+                    pushUndo(); clip.blurSigma = bar.getProgress() / 10f;
+                    saveProject(false); toast("Blur saved; MP4 export par apply hoga");
+                })
+                .setNeutralButton("Remove Blur", (d, w) -> {
+                    pushUndo(); clip.blurSigma = 0f; saveProject(false); toast("Blur remove ho gaya");
+                })
+                .setNegativeButton("Cancel", null).show();
     }
 
     private void showColorAdjustments(ClipItem clip) {
@@ -881,6 +926,7 @@ public class EditorActivity extends AppCompatActivity {
                     clip.brightness = brightness.getProgress() / 100f - 1f;
                     clip.contrast = contrast.getProgress() / 100f;
                     clip.saturation = saturation.getProgress() / 100f;
+                    clip.redScale = 1f; clip.greenScale = 1f; clip.blueScale = 1f;
                     saveProject(false);
                     toast("Color adjustments save ho gaye; export par apply honge");
                 })
@@ -889,6 +935,7 @@ public class EditorActivity extends AppCompatActivity {
                     clip.brightness = 0f;
                     clip.contrast = 1f;
                     clip.saturation = 1f;
+                    clip.redScale = 1f; clip.greenScale = 1f; clip.blueScale = 1f;
                     saveProject(false);
                     toast("Color reset ho gaya");
                 })
