@@ -21,8 +21,6 @@ import androidx.media3.common.C;
 import androidx.media3.common.Effect;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.audio.AudioProcessor;
-import androidx.media3.common.audio.DefaultGainProvider;
-import androidx.media3.common.audio.GainProcessor;
 import androidx.media3.common.audio.SonicAudioProcessor;
 import androidx.media3.effect.Presentation;
 import androidx.media3.effect.Brightness;
@@ -220,26 +218,16 @@ public class ExportActivity extends AppCompatActivity {
             boolean hasAudioAutomation = c.volume < 0.999f
                     || c.fadeInMs > 0L || c.fadeOutMs > 0L;
             if (!c.muted && hasAudioAutomation) {
-                DefaultGainProvider.Builder gainBuilder =
-                        new DefaultGainProvider.Builder(Math.max(0f, Math.min(1f, c.volume)));
-                if (c.fadeInMs > 0L) {
-                    long fadeInUs = c.fadeInMs * 1000L;
-                    if (clipDurationUs != C.TIME_UNSET) fadeInUs = Math.min(fadeInUs, clipDurationUs);
-                    if (fadeInUs > 0L) {
-                        gainBuilder.addFadeAt(0L, fadeInUs,
-                                DefaultGainProvider.FADE_IN_LINEAR);
-                    }
+                long fadeInUs = c.fadeInMs * 1000L;
+                long fadeOutUs = c.fadeOutMs * 1000L;
+                if (clipDurationUs != C.TIME_UNSET) {
+                    fadeInUs = Math.min(fadeInUs, clipDurationUs);
+                    fadeOutUs = Math.min(fadeOutUs, clipDurationUs);
+                } else {
+                    fadeOutUs = 0L;
                 }
-                if (c.fadeOutMs > 0L && clipDurationUs != C.TIME_UNSET
-                        && clipDurationUs > 0L) {
-                    long fadeOutUs = Math.min(c.fadeOutMs * 1000L, clipDurationUs);
-                    long fadeOutStartUs = Math.max(0L, clipDurationUs - fadeOutUs);
-                    if (fadeOutUs > 0L) {
-                        gainBuilder.addFadeAt(fadeOutStartUs, fadeOutUs,
-                                DefaultGainProvider.FADE_OUT_LINEAR);
-                    }
-                }
-                audio.add(new GainProcessor(gainBuilder.build()));
+                audio.add(new ClipAudioProcessor(c.volume, fadeInUs,
+                        fadeOutUs, clipDurationUs));
             }
             if (Math.abs(c.speed - 1f) > 0.001f) {
                 SonicAudioProcessor sonic = new SonicAudioProcessor();
