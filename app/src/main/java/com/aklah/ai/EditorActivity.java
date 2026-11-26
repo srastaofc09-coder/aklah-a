@@ -112,6 +112,7 @@ public class EditorActivity extends AppCompatActivity {
         LinearLayout r7 = findViewById(R.id.row7);
         addButton(r7, "Studio Tools", () -> showStudioTools());
         addButton(r7, "Add Subtitle", () -> addSubtitleAtPlayhead());
+        addButton(r7, "Advanced Manual Tools", () -> showAdvancedManualBatch());
         addButton(r3, "Project Save Karein", () -> saveProject(true));
         addButton(r3, "Export MP4", () -> openExport());
 
@@ -881,6 +882,59 @@ public class EditorActivity extends AppCompatActivity {
             return null;
         }
         return clips.get(i);
+    }
+
+    private void showAdvancedManualBatch() {
+        ClipItem clip = selectedClip();
+        if (clip == null) return;
+        final String[] options = {"Clip Transition", "Keyframe Motion (start/end)", "Manual Mask / Face Cover", "Advanced Audio Controls", "Color Grading"};
+        new AlertDialog.Builder(this).setTitle("ADVANCED MANUAL EDITING")
+                .setItems(options, (dialog, which) -> {
+                    ClipItem c = selectedClip();
+                    if (c == null) return;
+                    if (which == 0) {
+                        final String[] transitions = {"None", "Crossfade", "Dip to Black", "Wipe"};
+                        new AlertDialog.Builder(this).setTitle("Transition Type")
+                                .setSingleChoiceItems(transitions, c.transitionType, (d, selected) -> {
+                                    pushUndo(); c.transitionType = selected;
+                                    c.transitionDurationMs = selected == 0 ? 0L : 500L;
+                                    saveProject(false); refreshStrip();
+                                    d.dismiss();
+                                    toast("Transition choice saved. It still needs transition rendering in export.");
+                                }).setNegativeButton("Cancel", null).show();
+                    } else if (which == 1) {
+                        LinearLayout box = new LinearLayout(this); box.setOrientation(LinearLayout.VERTICAL);
+                        android.widget.EditText start = new android.widget.EditText(this); start.setHint("Start scale (1.0)");
+                        android.widget.EditText end = new android.widget.EditText(this); end.setHint("End scale (1.25)");
+                        start.setInputType(8194); end.setInputType(8194);
+                        start.setText(String.valueOf(c.keyStartScale)); end.setText(String.valueOf(c.keyEndScale));
+                        box.addView(start); box.addView(end);
+                        new AlertDialog.Builder(this).setTitle("Start / End Keyframe Scale").setView(box)
+                                .setPositiveButton("Save", (d, w) -> {
+                                    try {
+                                        pushUndo(); c.keyStartScale = Math.max(0.25f, Math.min(4f, Float.parseFloat(start.getText().toString())));
+                                        c.keyEndScale = Math.max(0.25f, Math.min(4f, Float.parseFloat(end.getText().toString())));
+                                        c.keyStartMs = 0L; c.keyEndMs = Math.max(1000L, clipDurationMs(c));
+                                        saveProject(false); refreshStrip(); toast("Keyframe values saved to project.");
+                                    } catch (Exception ex) { toast("Scale value sahi enter karein"); }
+                                }).setNegativeButton("Cancel", null).show();
+                    } else if (which == 2) {
+                        final String[] modes = {"Disable mask", "Rectangle cover", "Circle cover", "Blur region"};
+                        new AlertDialog.Builder(this).setTitle("Manual Mask Mode").setItems(modes, (d, mode) -> {
+                            pushUndo(); c.maskEnabled = mode != 0; c.maskMode = Math.max(0, mode - 1);
+                            saveProject(false); refreshStrip();
+                            toast(mode == 0 ? "Mask disabled" : "Mask setting saved; mask preview/export rendering is not connected yet.");
+                        }).show();
+                    } else if (which == 3) {
+                        showAdvancedClipTools();
+                    } else if (which == 4) {
+                        showColorAdjustments(c);
+                    }
+                }).show();
+    }
+
+    private long clipDurationMs(ClipItem c) {
+        return c.endMs > c.startMs ? c.endMs - c.startMs : 1000L;
     }
 
     private void showAdvancedClipTools() {
