@@ -919,11 +919,11 @@ public class EditorActivity extends AppCompatActivity {
                                     } catch (Exception ex) { toast("Scale value sahi enter karein"); }
                                 }).setNegativeButton("Cancel", null).show();
                     } else if (which == 2) {
-                        final String[] modes = {"Disable mask", "Rectangle cover", "Circle cover", "Blur region"};
+                        final String[] modes = {"Disable mask", "Rectangle cover", "Circle cover", "Blur region (solid privacy cover in export)"};
                         new AlertDialog.Builder(this).setTitle("Manual Mask Mode").setItems(modes, (d, mode) -> {
                             pushUndo(); c.maskEnabled = mode != 0; c.maskMode = Math.max(0, mode - 1);
                             saveProject(false); refreshStrip();
-                            toast(mode == 0 ? "Mask disabled" : "Mask setting saved; mask preview/export rendering is not connected yet.");
+                            toast(mode == 0 ? "Mask disabled" : "Mask saved; cover renders in export. Preview positioning is not connected yet.");
                         }).show();
                     } else if (which == 3) {
                         showAdvancedClipTools();
