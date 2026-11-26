@@ -109,6 +109,9 @@ public class EditorActivity extends AppCompatActivity {
         LinearLayout r6 = findViewById(R.id.row6);
         addButton(r6, "Text Style", () -> chooseTextForPreset());
         addButton(r6, "More Tools", () -> showMoreTools());
+        LinearLayout r7 = findViewById(R.id.row7);
+        addButton(r7, "Studio Tools", () -> showStudioTools());
+        addButton(r7, "Add Subtitle", () -> addSubtitleAtPlayhead());
         addButton(r3, "Project Save Karein", () -> saveProject(true));
         addButton(r3, "Export MP4", () -> openExport());
 
@@ -554,6 +557,84 @@ public class EditorActivity extends AppCompatActivity {
             dialog.getWindow().setLayout((int) (getResources().getDisplayMetrics().widthPixels * 0.94f),
                     LinearLayout.LayoutParams.WRAP_CONTENT);
         }
+    }
+
+    // Studio tools: quick text-based assets that are editable, saved and exported.
+    private void showStudioTools() {
+        final String[] tools = {
+                "Sticker / Emoji", "Shape Overlay", "Title Card", "Lower Third",
+                "Subtitle / Caption", "Watermark", "Text Animation Timing",
+                "Advanced Clip Lab", "More Timeline Tools"
+        };
+        new AlertDialog.Builder(this)
+                .setTitle("AKLAH AI • STUDIO TOOLS")
+                .setItems(tools, (dialog, which) -> {
+                    switch (which) {
+                        case 0: chooseSticker(); break;
+                        case 1: chooseShape(); break;
+                        case 2: addStyledOverlay("YOUR TITLE", 36, 0xFFFFD66B, 0x99000000, 0.5f, 0.28f, 0); break;
+                        case 3: addStyledOverlay("Name • Description", 24, 0xFFFFFFFF, 0x99000000, 0.28f, 0.78f, 1); break;
+                        case 4: addSubtitleAtPlayhead(); break;
+                        case 5: addStyledOverlay("© AKLAH AI", 16, 0xCCFFFFFF, 0x55000000, 0.82f, 0.92f, 2); break;
+                        case 6: chooseTextForTool(2); break;
+                        case 7: showAdvancedClipTools(); break;
+                        case 8: showMoreTools(); break;
+                    }
+                }).show();
+    }
+
+    private void addSubtitleAtPlayhead() {
+        if (project == null) return;
+        long now = timelineMs();
+        TextLayer layer = new TextLayer("Type your subtitle");
+        layer.startMs = now;
+        layer.endMs = now + 4000;
+        layer.sizeSp = 24;
+        layer.color = 0xFFFFFFFF;
+        layer.bgColor = 0x99000000;
+        layer.bold = true;
+        layer.align = 1;
+        layer.xFrac = 0.5f;
+        layer.yFrac = 0.82f;
+        texts.add(layer);
+        rebuildOverlay();
+        saveProject(false);
+        editText(layer);
+    }
+
+    private void chooseSticker() {
+        final String[] stickers = {"⭐","✨","🌙","☪","🤍","💚","🔥","🎬","🎧","📍","💫","🌸","🕌","📿","☁️","❤️"};
+        new AlertDialog.Builder(this).setTitle("Choose Sticker / Emoji")
+                .setItems(stickers, (d, which) ->
+                        addStyledOverlay(stickers[which], 46, 0xFFFFFFFF, 0, 0.5f, 0.5f, 3))
+                .show();
+    }
+
+    private void chooseShape() {
+        final String[] shapes = {"●","■","◆","★","✦","☾","▬","⬟","⬤","◇"};
+        new AlertDialog.Builder(this).setTitle("Shape Overlay")
+                .setItems(shapes, (d, which) ->
+                        addStyledOverlay(shapes[which], 52, 0xFFFFD66B, 0x55000000, 0.5f, 0.5f, 4))
+                .show();
+    }
+
+    private void addStyledOverlay(String value, int size, int color, int bg,
+                                  float x, float y, int kind) {
+        TextLayer layer = new TextLayer(value);
+        layer.startMs = timelineMs();
+        layer.endMs = layer.startMs + (kind == 3 || kind == 4 ? 5000 : 6000);
+        layer.sizeSp = size;
+        layer.color = color;
+        layer.bgColor = bg;
+        layer.bold = true;
+        layer.shadow = true;
+        layer.align = 1;
+        layer.xFrac = x;
+        layer.yFrac = y;
+        texts.add(layer);
+        rebuildOverlay();
+        saveProject(false);
+        toast("Overlay add ho gaya • Text Edit se badal sakte hain");
     }
 
     private void showMoreTools() {
