@@ -11,6 +11,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import static androidx.test.espresso.Espresso.onView;
+import static androidx.test.espresso.Espresso.pressBack;
 import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.action.ViewActions.closeSoftKeyboard;
 import static androidx.test.espresso.action.ViewActions.scrollTo;
@@ -33,7 +34,7 @@ public class EditorSmokeTest {
     }
 
     @Test
-    public void createSaveAndOpenProjectWithoutCrash() {
+    public void createSaveOpenAndOpenExportScreenWithoutCrash() {
         try (ActivityScenario<MainActivity> ignored = ActivityScenario.launch(MainActivity.class)) {
             onView(withId(R.id.btnNewProject)).perform(click());
 
@@ -50,8 +51,20 @@ public class EditorSmokeTest {
 
             onView(withText("Project Save Karein")).check(matches(isDisplayed()));
             onView(withText("Export MP4")).check(matches(isDisplayed()));
+
             onView(withText("More Tools")).perform(click());
             onView(withText("CLOSE")).check(matches(isDisplayed())).perform(click());
+
+            // Verify the export screen opens and its controls are present without
+            // starting an export (this smoke project intentionally has no media).
+            onView(withText("Export MP4")).perform(click());
+            onView(withId(R.id.tvStatus)).check(matches(isDisplayed()));
+            onView(withId(R.id.btnStartExport)).check(matches(isDisplayed()));
+            onView(withId(R.id.btnCancelExport)).check(matches(isDisplayed()));
+            pressBack();
+
+            onView(withId(R.id.tvEditorTitle))
+                    .check(matches(withText("CI Smoke Project")));
         }
     }
 }
