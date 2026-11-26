@@ -336,7 +336,7 @@ public class EditorActivity extends AppCompatActivity {
             return;
         }
         int i = currentIndex();
-        player.setVolume(i >= 0 && clips.get(i).muted ? 0f : 1f);
+        player.setVolume(i >= 0 && clips.get(i).muted ? 0f : clips.get(i).volume);
         if (i >= 0) player.setPlaybackSpeed(clips.get(i).speed);
     }
 
@@ -839,7 +839,8 @@ public class EditorActivity extends AppCompatActivity {
         final String[] tools = {
                 "Rotate 90°", "Rotate 180°", "Rotate 270°", "Reset Rotation",
                 "Flip Horizontal", "Flip Vertical", "Crop / Aspect Ratio", "Playback Speed",
-                "Color Adjustments", "Quick Filter Presets", "Gaussian Blur", "Reset All Advanced Edits"
+                "Color Adjustments", "Quick Filter Presets", "Gaussian Blur",
+                "Clip Volume", "Audio Fade In", "Audio Fade Out", "Reset All Advanced Edits"
         };
         new AlertDialog.Builder(this)
                 .setTitle("ADVANCED CLIP LAB")
@@ -858,11 +859,17 @@ public class EditorActivity extends AppCompatActivity {
                         case 8: showColorAdjustments(clip); return;
                         case 9: chooseFilterPreset(clip); return;
                         case 10: chooseBlur(clip); return;
-                        case 11:
+                        case 11: chooseClipVolume(clip); return;
+                        case 12: chooseClipFade(clip, true); return;
+                        case 13: chooseClipFade(clip, false); return;
+                        case 14:
                             pushUndo();
                             clip.rotationDegrees = 0;
                             clip.cropMode = 0;
                             clip.speed = 1f;
+                            clip.volume = 1f;
+                            clip.fadeInMs = 0L;
+                            clip.fadeOutMs = 0L;
                             clip.brightness = 0f;
                             clip.contrast = 1f;
                             clip.saturation = 1f;
@@ -879,6 +886,67 @@ public class EditorActivity extends AppCompatActivity {
                     refreshStrip();
                     toast("Advanced edit save ho gaya; export par apply hoga");
                 })
+                .show();
+    }
+
+    private void chooseClipVolume(ClipItem clip) {
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(dp(18), dp(12), dp(18), dp(8));
+        TextView label = new TextView(this);
+        label.setText("Clip volume: " + Math.round(clip.volume * 100f) + "%");
+        label.setTextColor(0xFFFFD66B);
+        root.addView(label);
+        SeekBar bar = new SeekBar(this);
+        bar.setMax(100);
+        bar.setProgress(Math.round(clip.volume * 100f));
+        bar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar seek, int progress, boolean fromUser) {
+                label.setText("Clip volume: " + progress + "%");
+                if (fromUser && player != null && currentIndex() >= 0
+                        && clips.get(currentIndex()) == clip) {
+                    player.setVolume(clip.muted ? 0f : progress / 100f);
+                }
+            }
+            @Override public void onStartTrackingTouch(SeekBar seek) { }
+            @Override public void onStopTrackingTouch(SeekBar seek) { }
+        });
+        root.addView(bar);
+        new AlertDialog.Builder(this).setTitle("Clip Volume")
+                .setView(root)
+                .setPositiveButton("Apply", (d, w) -> {
+                    pushUndo();
+                    clip.volume = bar.getProgress() / 100f;
+                    applyCurrentClipAudio();
+                    saveProject(false);
+                    refreshStrip();
+                    toast("Clip volume saved");
+                })
+                .setNeutralButton("Reset 100%", (d, w) -> {
+                    pushUndo(); clip.volume = 1f; applyCurrentClipAudio();
+                    saveProject(false); refreshStrip(); toast("Volume reset");
+                })
+                .setNegativeButton("Cancel", (d, w) -> applyCurrentClipAudio())
+                .show();
+    }
+
+    private void chooseClipFade(ClipItem clip, boolean fadeIn) {
+        final long[] durations = {0L, 500L, 1000L, 2000L, 3000L, 5000L};
+        final String[] labels = {"Off", "0.5 sec", "1 sec", "2 sec", "3 sec", "5 sec"};
+        long current = fadeIn ? clip.fadeInMs : clip.fadeOutMs;
+        int selected = 0;
+        for (int i = 0; i < durations.length; i++) if (durations[i] == current) selected = i;
+        new AlertDialog.Builder(this)
+                .setTitle(fadeIn ? "Audio Fade In" : "Audio Fade Out")
+                .setSingleChoiceItems(labels, selected, (dialog, which) -> {
+                    pushUndo();
+                    if (fadeIn) clip.fadeInMs = durations[which];
+                    else clip.fadeOutMs = durations[which];
+                    saveProject(false);
+                    dialog.dismiss();
+                    toast((fadeIn ? "Fade in" : "Fade out") + " saved for MP4 export");
+                })
+                .setNegativeButton("Cancel", null)
                 .show();
     }
 
