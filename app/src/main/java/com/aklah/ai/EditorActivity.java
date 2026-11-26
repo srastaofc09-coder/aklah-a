@@ -539,26 +539,229 @@ public class EditorActivity extends AppCompatActivity {
     }
 
     private void showMoreTools() {
-        final String[] actions = {
-                "Duplicate Text Layer",
-                "Text Alignment (Left / Center / Right)",
-                "Set Text Start at Playhead",
-                "Set Text End at Playhead",
-                "Reset Selected Clip Trim",
-                "Reverse Entire Timeline"
+        final String[] titles = {
+                "Duplicate Text", "Text Alignment", "Text Start", "Text End",
+                "Reset Clip Trim", "Reverse Timeline", "Mute All Clips",
+                "Unmute All Clips", "First Clip", "Next Clip"
         };
-        new AlertDialog.Builder(this)
-                .setTitle("More Editing Tools")
-                .setItems(actions, (dialog, which) -> {
-                    if (which == 4) {
-                        resetSelectedClipTrim();
-                    } else if (which == 5) {
-                        reverseTimeline();
+        final String[] subtitles = {
+                "Copy selected overlay", "Cycle left / center / right",
+                "Start overlay at playhead", "End overlay at playhead",
+                "Restore full clip", "Reverse clip order",
+                "Turn off clip audio", "Restore clip audio",
+                "Jump to beginning", "Move to next clip"
+        };
+        final String[] icons = {"⧉", "↔", "◷", "◴", "⟲", "⇄", "🔇", "🔊", "⏮", "⏭"};
+        final int[] actions = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(dp(18), dp(18), dp(18), dp(14));
+        root.setBackground(roundRect(0xFF101216, 0xFF30333A, 1, 22));
+
+        TextView heading = new TextView(this);
+        heading.setText("MORE EDITING TOOLS");
+        heading.setTextColor(0xFFFFD66B);
+        heading.setTextSize(18);
+        heading.setTypeface(null, Typeface.BOLD);
+        heading.setPadding(dp(2), dp(2), dp(2), dp(8));
+        root.addView(heading);
+
+        TextView note = new TextView(this);
+        note.setText("Quick actions for your timeline and text layers");
+        note.setTextColor(0xFFB8BBC4);
+        note.setTextSize(12);
+        note.setPadding(dp(2), 0, dp(2), dp(14));
+        root.addView(note);
+
+        ScrollView scroll = new ScrollView(this);
+        LinearLayout grid = new LinearLayout(this);
+        grid.setOrientation(LinearLayout.VERTICAL);
+        for (int i = 0; i < titles.length; i += 2) {
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            for (int j = i; j < Math.min(i + 2, titles.length); j++) {
+                final int action = actions[j];
+                LinearLayout card = new LinearLayout(this);
+                card.setOrientation(LinearLayout.VERTICAL);
+                card.setGravity(Gravity.CENTER_VERTICAL);
+                card.setPadding(dp(12), dp(12), dp(10), dp(12));
+                card.setBackground(roundRect(0xFF1B1E24, 0xFF3A3D45, 1, 16));
+                TextView icon = new TextView(this);
+                icon.setText(icons[j]);
+                icon.setTextColor(0xFFFFD66B);
+                icon.setTextSize(22);
+                icon.setGravity(Gravity.CENTER);
+                TextView title = new TextView(this);
+                title.setText(titles[j]);
+                title.setTextColor(0xFFF7F7F8);
+                title.setTextSize(13);
+                title.setTypeface(null, Typeface.BOLD);
+                title.setPadding(0, dp(5), 0, dp(3));
+                TextView desc = new TextView(this);
+                desc.setText(subtitles[j]);
+                desc.setTextColor(0xFFB0B4BE);
+                desc.setTextSize(10);
+                desc.setMaxLines(2);
+                card.addView(icon);
+                card.addView(title);
+                card.addView(desc);
+                LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(0, dp(112), 1f);
+                cp.setMargins(dp(4), dp(4), dp(4), dp(4));
+                row.addView(card, cp);
+                card.setOnClickListener(v -> {
+                    if (action <= 3) {
+                        showTextLayerPicker(action, titles[action]);
                     } else {
-                        chooseTextForTool(which);
+                        performMoreTool(action);
                     }
-                })
-                .show();
+                });
+            }
+            grid.addView(row);
+        }
+        scroll.addView(grid);
+        root.addView(scroll, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
+
+        TextView close = new TextView(this);
+        close.setText("CLOSE");
+        close.setTextColor(0xFF101216);
+        close.setTextSize(14);
+        close.setTypeface(null, Typeface.BOLD);
+        close.setGravity(Gravity.CENTER);
+        close.setBackground(roundRect(0xFFFFD66B, 0xFFFFD66B, 1, 14));
+        LinearLayout.LayoutParams closeLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(48));
+        closeLp.setMargins(dp(4), dp(12), dp(4), 0);
+        root.addView(close, closeLp);
+
+        AlertDialog dialog = new AlertDialog.Builder(this).create();
+        close.setOnClickListener(v -> dialog.dismiss());
+        dialog.setView(root);
+        dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            dialog.getWindow().setLayout(
+                    (int) (getResources().getDisplayMetrics().widthPixels * 0.94f),
+                    (int) (getResources().getDisplayMetrics().heightPixels * 0.82f));
+        }
+    }
+
+    private void showTextLayerPicker(final int action, String title) {
+        if (texts.isEmpty()) {
+            toast("Pehle + Text se text jodein");
+            return;
+        }
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(dp(18), dp(18), dp(18), dp(12));
+        root.setBackground(roundRect(0xFF101216, 0xFF30333A, 1, 20));
+        TextView heading = new TextView(this);
+        heading.setText(title.toUpperCase(Locale.ROOT));
+        heading.setTextColor(0xFFFFD66B);
+        heading.setTextSize(17);
+        heading.setTypeface(null, Typeface.BOLD);
+        root.addView(heading);
+        for (int i = 0; i < texts.size(); i++) {
+            final TextLayer layer = texts.get(i);
+            TextView item = new TextView(this);
+            String label = layer.text.replace('\n', ' ');
+            if (label.length() > 38) label = label.substring(0, 38) + "…";
+            item.setText("✦  " + (i + 1) + ". " + label);
+            item.setTextColor(0xFFF4F4F6);
+            item.setTextSize(14);
+            item.setPadding(dp(14), dp(15), dp(14), dp(15));
+            item.setBackground(roundRect(0xFF20232A, 0xFF3B3F48, 1, 12));
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            lp.setMargins(0, dp(8), 0, 0);
+            root.addView(item, lp);
+            item.setOnClickListener(v -> {
+                if (action == 0) {
+                    TextLayer copy = layer.copy();
+                    copy.xFrac = clamp(copy.xFrac + 0.04f);
+                    copy.yFrac = clamp(copy.yFrac + 0.04f);
+                    texts.add(copy);
+                    rebuildOverlay();
+                    saveProject(false);
+                    toast("Text layer duplicate ho gayi");
+                } else if (action == 1) {
+                    layer.align = (layer.align + 1) % 3;
+                    rebuildOverlay();
+                    saveProject(false);
+                    toast("Text alignment update ho gaya");
+                } else if (action == 2) {
+                    long now = timelineMs();
+                    layer.startMs = now;
+                    if (layer.endMs >= 0 && layer.endMs <= now) layer.endMs = now + 3000;
+                    rebuildOverlay();
+                    saveProject(false);
+                    toast("Text start playhead par set ho gaya");
+                } else if (action == 3) {
+                    long now = timelineMs();
+                    if (now <= layer.startMs + 200) {
+                        toast("Playhead ko text start se aage le jayein");
+                        return;
+                    }
+                    layer.endMs = now;
+                    rebuildOverlay();
+                    saveProject(false);
+                    toast("Text end playhead par set ho gaya");
+                }
+                ((AlertDialog) root.getTag()).dismiss();
+            });
+        }
+        AlertDialog dialog = new AlertDialog.Builder(this).create();
+        root.setTag(dialog);
+        dialog.setView(root);
+        dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            dialog.getWindow().setLayout((int) (getResources().getDisplayMetrics().widthPixels * 0.92f),
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+        }
+    }
+
+    private void performMoreTool(int action) {
+        switch (action) {
+            case 4: resetSelectedClipTrim(); break;
+            case 5: reverseTimeline(); break;
+            case 6: setAllClipsMuted(true); break;
+            case 7: setAllClipsMuted(false); break;
+            case 8:
+                if (!clips.isEmpty() && player != null) player.seekToDefaultPosition(0);
+                break;
+            case 9:
+                if (player != null && currentIndex() >= 0 && currentIndex() + 1 < clips.size())
+                    player.seekToDefaultPosition(currentIndex() + 1);
+                else toast("Next clip nahi hai");
+                break;
+        }
+    }
+
+    private void setAllClipsMuted(boolean muted) {
+        if (clips.isEmpty()) return;
+        pushUndo();
+        for (ClipItem clip : clips) clip.muted = muted;
+        applyCurrentClipAudio();
+        refreshStrip();
+        saveProject(false);
+        toast(muted ? "All clips muted" : "All clips unmuted");
+    }
+
+    private int dp(float value) {
+        return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
+    }
+
+    private android.graphics.drawable.GradientDrawable roundRect(
+            int fill, int stroke, int strokeDp, int radiusDp) {
+        android.graphics.drawable.GradientDrawable shape =
+                new android.graphics.drawable.GradientDrawable();
+        shape.setColor(fill);
+        shape.setCornerRadius(dp(radiusDp));
+        shape.setStroke(dp(strokeDp), stroke);
+        return shape;
     }
 
     private void chooseTextForTool(final int action) {
@@ -831,15 +1034,33 @@ public class EditorActivity extends AppCompatActivity {
 
     private void addButton(LinearLayout row, String label, Runnable action) {
         float d = getResources().getDisplayMetrics().density;
+        String icon = "✦";
+        if (label.contains("Split")) icon = "✂";
+        else if (label.contains("Trim")) icon = "◴";
+        else if (label.contains("Delete")) icon = "⌫";
+        else if (label.contains("Peeche") || label.contains("Aage")) icon = "⇄";
+        else if (label.contains("Undo")) icon = "↶";
+        else if (label.contains("Redo")) icon = "↷";
+        else if (label.contains("Text")) icon = "T";
+        else if (label.contains("Duplicate")) icon = "⧉";
+        else if (label.contains("Mute")) icon = "♫";
+        else if (label.contains("More")) icon = "☷";
+        else if (label.contains("Save")) icon = "▣";
+        else if (label.contains("Export")) icon = "▶";
+
         TextView b = new TextView(this);
-        b.setText(label);
+        b.setText(icon + "\n" + label);
         b.setGravity(Gravity.CENTER);
-        b.setTextSize(13);
-        b.setTextColor(0xFFD4AF37);
-        b.setBackgroundResource(R.drawable.bg_card);
+        b.setTextSize(11);
+        b.setTypeface(null, Typeface.BOLD);
+        b.setLineSpacing(dp(1), 1f);
+        b.setTextColor(0xFFFFD66B);
+        b.setPadding(dp(2), dp(5), dp(2), dp(5));
+        b.setBackground(roundRect(0xFF1A1D23, 0xFF41444D, 1, 12));
+        b.setElevation(dp(2));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                0, (int) (44 * d), 1f);
-        lp.setMargins((int) (3 * d), (int) (3 * d), (int) (3 * d), (int) (3 * d));
+                0, (int) (58 * d), 1f);
+        lp.setMargins((int) (4 * d), (int) (4 * d), (int) (4 * d), (int) (4 * d));
         b.setLayoutParams(lp);
         b.setOnClickListener(v -> action.run());
         row.addView(b);
