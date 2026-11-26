@@ -915,7 +915,7 @@ public class EditorActivity extends AppCompatActivity {
                                         pushUndo(); c.keyStartScale = Math.max(0.25f, Math.min(4f, Float.parseFloat(start.getText().toString())));
                                         c.keyEndScale = Math.max(0.25f, Math.min(4f, Float.parseFloat(end.getText().toString())));
                                         c.keyStartMs = 0L; c.keyEndMs = Math.max(1000L, clipDurationMs(c));
-                                        saveProject(false); refreshStrip(); toast("Keyframe values saved to project.");
+                                        saveProject(false); refreshStrip(); toast("Keyframes saved; scale/position animation is applied during export.");
                                     } catch (Exception ex) { toast("Scale value sahi enter karein"); }
                                 }).setNegativeButton("Cancel", null).show();
                     } else if (which == 2) {
