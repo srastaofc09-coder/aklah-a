@@ -12,6 +12,12 @@ public class ClipItem {
     public float brightness = 0f; // -1..1
     public float contrast = 1f; // 0..2
     public float saturation = 1f; // 0..2
+    public boolean flipX = false;
+    public boolean flipY = false;
+    public float blurSigma = 0f;
+    public float redScale = 1f;
+    public float greenScale = 1f;
+    public float blueScale = 1f
 
     public ClipItem(String uri, long startMs, long endMs) {
         this.uri = uri;
@@ -28,6 +34,12 @@ public class ClipItem {
         copy.brightness = brightness;
         copy.contrast = contrast;
         copy.saturation = saturation;
+        copy.flipX = flipX;
+        copy.flipY = flipY;
+        copy.blurSigma = blurSigma;
+        copy.redScale = redScale;
+        copy.greenScale = greenScale;
+        copy.blueScale = blueScale;
         return copy;
     }
 }
