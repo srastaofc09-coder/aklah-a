@@ -35,10 +35,27 @@ public class ProjectStore {
                 if (clips != null) {
                     for (int j = 0; j < clips.length(); j++) {
                         JSONObject c = clips.getJSONObject(j);
-                        p.clips.add(new ClipItem(
+                        ClipItem clip = new ClipItem(
                                 c.getString("uri"),
                                 c.getLong("start"),
-                                c.getLong("end")));
+                                c.getLong("end"));
+                        clip.muted = c.optBoolean("muted", false);
+                        clip.volume = (float) c.optDouble("volume", 1.0);
+                        clip.fadeInMs = c.optLong("fadeInMs", 0L);
+                        clip.fadeOutMs = c.optLong("fadeOutMs", 0L);
+                        clip.rotationDegrees = c.optInt("rotation", 0);
+                        clip.cropMode = c.optInt("crop", 0);
+                        clip.speed = (float) c.optDouble("speed", 1.0);
+                        clip.brightness = (float) c.optDouble("brightness", 0.0);
+                        clip.contrast = (float) c.optDouble("contrast", 1.0);
+                        clip.saturation = (float) c.optDouble("saturation", 1.0);
+                        clip.flipX = c.optBoolean("flipX", false);
+                        clip.flipY = c.optBoolean("flipY", false);
+                        clip.blurSigma = (float) c.optDouble("blurSigma", 0.0);
+                        clip.redScale = (float) c.optDouble("redScale", 1.0);
+                        clip.greenScale = (float) c.optDouble("greenScale", 1.0);
+                        clip.blueScale = (float) c.optDouble("blueScale", 1.0);
+                        p.clips.add(clip);
                     }
                 }
                 JSONArray texts = o.optJSONArray("texts");
@@ -57,6 +74,8 @@ public class ProjectStore {
                         tl.align = t.getInt("align");
                         tl.xFrac = (float) t.getDouble("x");
                         tl.yFrac = (float) t.getDouble("y");
+                        tl.animationMode = t.optInt("animationMode", 0);
+                        tl.animationDurationMs = t.optLong("animationDurationMs", 600L);
                         p.texts.add(tl);
                     }
                 }
@@ -103,6 +122,22 @@ public class ProjectStore {
                     co.put("uri", c.uri);
                     co.put("start", c.startMs);
                     co.put("end", c.endMs);
+                    co.put("muted", c.muted);
+                    co.put("volume", c.volume);
+                    co.put("fadeInMs", c.fadeInMs);
+                    co.put("fadeOutMs", c.fadeOutMs);
+                    co.put("rotation", c.rotationDegrees);
+                    co.put("crop", c.cropMode);
+                    co.put("speed", c.speed);
+                    co.put("brightness", c.brightness);
+                    co.put("contrast", c.contrast);
+                    co.put("saturation", c.saturation);
+                    co.put("flipX", c.flipX);
+                    co.put("flipY", c.flipY);
+                    co.put("blurSigma", c.blurSigma);
+                    co.put("redScale", c.redScale);
+                    co.put("greenScale", c.greenScale);
+                    co.put("blueScale", c.blueScale);
                     clips.put(co);
                 }
                 o.put("clips", clips);
@@ -121,6 +156,8 @@ public class ProjectStore {
                     to.put("align", t.align);
                     to.put("x", (double) t.xFrac);
                     to.put("y", (double) t.yFrac);
+                    to.put("animationMode", t.animationMode);
+                    to.put("animationDurationMs", t.animationDurationMs);
                     texts.put(to);
                 }
                 o.put("texts", texts);

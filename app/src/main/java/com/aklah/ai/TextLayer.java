@@ -14,6 +14,8 @@ public class TextLayer {
     public int align = 1; // 0 left, 1 center, 2 right
     public float xFrac = 0.5f;
     public float yFrac = 0.5f;
+    public int animationMode = 0; // 0 none, 1 fade, 2 slide up, 3 zoom, 4 fade in/out
+    public long animationDurationMs = 600L;
 
     public TextLayer(String text) {
         this.text = text;
@@ -32,6 +34,8 @@ public class TextLayer {
         t.align = align;
         t.xFrac = xFrac;
         t.yFrac = yFrac;
+        t.animationMode = animationMode;
+        t.animationDurationMs = animationDurationMs;
         return t;
     }
 }

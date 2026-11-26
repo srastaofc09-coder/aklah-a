@@ -21,7 +21,15 @@ import androidx.media3.common.C;
 import androidx.media3.common.Effect;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.audio.AudioProcessor;
+import androidx.media3.common.audio.SonicAudioProcessor;
 import androidx.media3.effect.Presentation;
+import androidx.media3.effect.Brightness;
+import androidx.media3.effect.Contrast;
+import androidx.media3.effect.HslAdjustment;
+import androidx.media3.effect.GaussianBlur;
+import androidx.media3.effect.RgbAdjustment;
+import androidx.media3.effect.ScaleAndRotateTransformation;
+import androidx.media3.effect.SpeedChangeEffect;
 import androidx.media3.transformer.Composition;
 import androidx.media3.transformer.DefaultEncoderFactory;
 import androidx.media3.transformer.EditedMediaItem;
@@ -167,11 +175,68 @@ public class ExportActivity extends AppCompatActivity {
                                     .build())
                     .build();
             EditedMediaItem.Builder eb = new EditedMediaItem.Builder(mi);
-            if (height > 0) {
-                List<Effect> video = new ArrayList<>();
-                video.add(Presentation.createForHeight(height));
-                eb.setEffects(new Effects(
-                        Collections.<AudioProcessor>emptyList(), video));
+            eb.setRemoveAudio(c.muted);
+            List<Effect> video = new ArrayList<>();
+
+            // Apply the transform when either rotation OR a flip is selected.
+            // Previously flip-only edits were skipped because this block checked rotation alone.
+            if (c.rotationDegrees != 0 || c.flipX || c.flipY) {
+                video.add(new ScaleAndRotateTransformation.Builder()
+                        .setScale(c.flipX ? -1f : 1f, c.flipY ? -1f : 1f)
+                        .setRotationDegrees(c.rotationDegrees)
+                        .build());
+            }
+            if (Math.abs(c.speed - 1f) > 0.001f) video.add(new SpeedChangeEffect(c.speed));
+            if (Math.abs(c.brightness) > 0.001f) video.add(new Brightness(c.brightness));
+            if (Math.abs(c.contrast - 1f) > 0.001f) video.add(new Contrast(c.contrast));
+            if (Math.abs(c.saturation - 1f) > 0.001f) {
+                video.add(new HslAdjustment.Builder()
+                        .adjustSaturation((c.saturation - 1f) * 100f)
+                        .build());
+            }
+            if (Math.abs(c.redScale - 1f) > 0.001f
+                    || Math.abs(c.greenScale - 1f) > 0.001f
+                    || Math.abs(c.blueScale - 1f) > 0.001f) {
+                video.add(new RgbAdjustment.Builder()
+                        .setRedScale(c.redScale)
+                        .setGreenScale(c.greenScale)
+                        .setBlueScale(c.blueScale)
+                        .build());
+            }
+            if (c.blurSigma > 0.01f) video.add(new GaussianBlur(c.blurSigma));
+            if (c.cropMode == 1) {
+                video.add(Presentation.createForAspectRatio(9f / 16f, Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP));
+            } else if (c.cropMode == 2) {
+                video.add(Presentation.createForAspectRatio(1f, Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP));
+            } else if (c.cropMode == 3) {
+                video.add(Presentation.createForAspectRatio(16f / 9f, Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP));
+            }
+            if (height > 0) video.add(Presentation.createForHeight(height));
+            List<AudioProcessor> audio = new ArrayList<>();
+            long clipDurationUs = c.endMs > c.startMs
+                    ? (c.endMs - c.startMs) * 1000L : C.TIME_UNSET;
+            boolean hasAudioAutomation = c.volume < 0.999f
+                    || c.fadeInMs > 0L || c.fadeOutMs > 0L;
+            if (!c.muted && hasAudioAutomation) {
+                long fadeInUs = c.fadeInMs * 1000L;
+                long fadeOutUs = c.fadeOutMs * 1000L;
+                if (clipDurationUs != C.TIME_UNSET) {
+                    fadeInUs = Math.min(fadeInUs, clipDurationUs);
+                    fadeOutUs = Math.min(fadeOutUs, clipDurationUs);
+                } else {
+                    fadeOutUs = 0L;
+                }
+                audio.add(new ClipAudioProcessor(c.volume, fadeInUs,
+                        fadeOutUs, clipDurationUs));
+            }
+            if (Math.abs(c.speed - 1f) > 0.001f) {
+                SonicAudioProcessor sonic = new SonicAudioProcessor();
+                sonic.setSpeed(c.speed);
+                sonic.setPitch(1f);
+                audio.add(sonic);
+            }
+            if (!video.isEmpty() || !audio.isEmpty()) {
+                eb.setEffects(new Effects(audio, video));
             }
             items.add(eb.build());
         }
@@ -182,7 +247,19 @@ public class ExportActivity extends AppCompatActivity {
         }
 
         EditedMediaItemSequence sequence = new EditedMediaItemSequence(items);
-        Composition composition = new Composition.Builder(sequence).build();
+        Composition.Builder compositionBuilder = new Composition.Builder(sequence);
+
+        // Render project text layers into the final MP4 across the composition timeline.
+        float previewW = getIntent().getFloatExtra(EditorActivity.EXTRA_PREVIEW_W, 0f);
+        androidx.media3.effect.OverlayEffect textOverlay = TextOverlayBuilder.build(
+                this, project.texts, height > 0 ? height : 1080, previewW);
+        if (textOverlay != null) {
+            List<Effect> compositionVideoEffects = new ArrayList<>();
+            compositionVideoEffects.add(textOverlay);
+            compositionBuilder.setEffects(new Effects(
+                    Collections.emptyList(), compositionVideoEffects));
+        }
+        Composition composition = compositionBuilder.build();
 
         outFile = new File(getCacheDir(), "export_" + System.currentTimeMillis() + ".mp4");
 
