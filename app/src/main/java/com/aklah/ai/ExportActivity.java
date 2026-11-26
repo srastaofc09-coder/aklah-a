@@ -434,7 +434,8 @@ public class ExportActivity extends AppCompatActivity {
         }
 
         EditedMediaItemSequence sequence = new EditedMediaItemSequence(items);
-        Composition.Builder compositionBuilder = new Composition.Builder(sequence);
+        List<EditedMediaItemSequence> compositionSequences = new ArrayList<>();
+        compositionSequences.add(sequence);
 
         // Each independent music/audio layer is exported as its own parallel audio sequence.
         for (AudioTrackItem track : project.audioTracks) {
@@ -459,8 +460,11 @@ public class ExportActivity extends AppCompatActivity {
                 audioItemBuilder.setEffects(new Effects(trackProcessors, Collections.emptyList()));
             }
             audioSequenceItems.add(audioItemBuilder.build());
-            compositionBuilder.addSequence(new EditedMediaItemSequence(audioSequenceItems));
+            compositionSequences.add(new EditedMediaItemSequence(audioSequenceItems));
         }
+
+        Composition.Builder compositionBuilder = new Composition.Builder(
+                compositionSequences.toArray(new EditedMediaItemSequence[0]));
 
         // Render project text layers into the final MP4 across the composition timeline.
         float previewW = getIntent().getFloatExtra(EditorActivity.EXTRA_PREVIEW_W, 0f);
