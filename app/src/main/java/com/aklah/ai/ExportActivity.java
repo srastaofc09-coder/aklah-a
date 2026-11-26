@@ -177,7 +177,9 @@ public class ExportActivity extends AppCompatActivity {
             EditedMediaItem.Builder eb = new EditedMediaItem.Builder(mi);
             eb.setRemoveAudio(c.muted);
             List<Effect> video = new ArrayList<>();
-            if (c.rotationDegrees != 0) {
+            // Apply the transform when either rotation OR a flip is selected.
+            // Previously flip-only edits were skipped because this block checked rotation alone.
+            if (c.rotationDegrees != 0 || c.flipX || c.flipY) {
                 video.add(new ScaleAndRotateTransformation.Builder()
                         .setScale(c.flipX ? -1f : 1f, c.flipY ? -1f : 1f)
                         .setRotationDegrees(c.rotationDegrees)
