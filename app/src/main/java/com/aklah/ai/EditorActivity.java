@@ -758,7 +758,7 @@ public class EditorActivity extends AppCompatActivity {
         final String[] tools = {
                 "Rotate 90°", "Rotate 180°", "Rotate 270°", "Reset Rotation",
                 "Crop / Aspect Ratio", "Playback Speed", "Color Adjustments",
-                "Reset All Advanced Edits"
+                "Quick Filter Presets", "Reset All Advanced Edits"
         };
         new AlertDialog.Builder(this)
                 .setTitle("ADVANCED CLIP LAB")
@@ -774,7 +774,8 @@ public class EditorActivity extends AppCompatActivity {
                         case 4: chooseCropMode(clip); return;
                         case 5: chooseClipSpeed(clip); return;
                         case 6: showColorAdjustments(clip); return;
-                        case 7:
+                        case 7: chooseFilterPreset(clip); return;
+                        case 8:
                             clip.rotationDegrees = 0;
                             clip.cropMode = 0;
                             clip.speed = 1f;
@@ -823,6 +824,32 @@ public class EditorActivity extends AppCompatActivity {
                     toast("Preview speed set. Export speed processing needs a compatible transformer build.");
                 })
                 .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+
+    private void chooseFilterPreset(ClipItem clip) {
+        final String[] names = {
+                "Normal", "Black & White", "Cinematic", "Warm Film",
+                "Cool Blue", "Bright Clean", "Vintage Soft", "High Contrast"
+        };
+        new AlertDialog.Builder(this)
+                .setTitle("Quick Filter Presets")
+                .setItems(names, (dialog, which) -> {
+                    pushUndo();
+                    switch (which) {
+                        case 0: clip.brightness=0f; clip.contrast=1f; clip.saturation=1f; break;
+                        case 1: clip.brightness=0f; clip.contrast=1.12f; clip.saturation=0f; break;
+                        case 2: clip.brightness=-0.04f; clip.contrast=1.28f; clip.saturation=0.82f; break;
+                        case 3: clip.brightness=0.06f; clip.contrast=1.08f; clip.saturation=1.22f; break;
+                        case 4: clip.brightness=-0.03f; clip.contrast=1.12f; clip.saturation=0.88f; break;
+                        case 5: clip.brightness=0.18f; clip.contrast=1.02f; clip.saturation=1.08f; break;
+                        case 6: clip.brightness=0.02f; clip.contrast=0.92f; clip.saturation=0.72f; break;
+                        case 7: clip.brightness=-0.06f; clip.contrast=1.55f; clip.saturation=1.18f; break;
+                    }
+                    saveProject(false);
+                    toast("Filter save ho gaya; MP4 export par apply hoga");
+                })
                 .show();
     }
 
