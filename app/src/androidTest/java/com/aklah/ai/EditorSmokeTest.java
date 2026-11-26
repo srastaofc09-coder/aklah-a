@@ -13,6 +13,7 @@ import org.junit.runner.RunWith;
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.action.ViewActions.closeSoftKeyboard;
+import static androidx.test.espresso.action.ViewActions.scrollTo;
 import static androidx.test.espresso.action.ViewActions.typeText;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
@@ -42,7 +43,7 @@ public class EditorSmokeTest {
 
             onView(withId(R.id.tvRecentEmpty))
                     .check(matches(withText(org.hamcrest.Matchers.containsString("CI Smoke Project"))))
-                    .perform(click());
+                    .perform(scrollTo(), click());
 
             onView(withId(R.id.tvEditorTitle))
                     .check(matches(withText("CI Smoke Project")));
