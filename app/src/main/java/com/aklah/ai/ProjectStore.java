@@ -67,6 +67,16 @@ public class ProjectStore {
                         p.clips.add(clip);
                     }
                 }
+                JSONArray audioTracks = o.optJSONArray("audioTracks");
+                if (audioTracks != null) {
+                    for (int j = 0; j < audioTracks.length(); j++) {
+                        JSONObject a = audioTracks.getJSONObject(j);
+                        AudioTrackItem track = new AudioTrackItem(a.getString("uri"));
+                        track.volume = (float) a.optDouble("volume", 1.0);
+                        track.muted = a.optBoolean("muted", false);
+                        p.audioTracks.add(track);
+                    }
+                }
                 JSONArray texts = o.optJSONArray("texts");
                 if (texts != null) {
                     for (int j = 0; j < texts.length(); j++) {
@@ -156,6 +166,15 @@ public class ProjectStore {
                     clips.put(co);
                 }
                 o.put("clips", clips);
+                JSONArray audioTracks = new JSONArray();
+                for (AudioTrackItem track : p.audioTracks) {
+                    JSONObject ao = new JSONObject();
+                    ao.put("uri", track.uri);
+                    ao.put("volume", track.volume);
+                    ao.put("muted", track.muted);
+                    audioTracks.put(ao);
+                }
+                o.put("audioTracks", audioTracks);
                 JSONArray texts = new JSONArray();
                 for (TextLayer t : p.texts) {
                     JSONObject to = new JSONObject();
