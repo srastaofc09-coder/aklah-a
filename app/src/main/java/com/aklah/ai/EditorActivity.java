@@ -106,6 +106,7 @@ public class EditorActivity extends AppCompatActivity {
         addButton(r5, "Mute / Unmute", () -> toggleClipMute());
         LinearLayout r6 = findViewById(R.id.row6);
         addButton(r6, "Text Style", () -> chooseTextForPreset());
+        addButton(r6, "More Tools", () -> showMoreTools());
         addButton(r3, "Project Save Karein", () -> saveProject(true));
         addButton(r3, "Export MP4", () -> openExport());
 
@@ -535,6 +536,110 @@ public class EditorActivity extends AppCompatActivity {
                     toast("Text style apply ho gaya");
                 })
                 .show();
+    }
+
+    private void showMoreTools() {
+        final String[] actions = {
+                "Duplicate Text Layer",
+                "Text Alignment (Left / Center / Right)",
+                "Set Text Start at Playhead",
+                "Set Text End at Playhead",
+                "Reset Selected Clip Trim",
+                "Reverse Entire Timeline"
+        };
+        new AlertDialog.Builder(this)
+                .setTitle("More Editing Tools")
+                .setItems(actions, (dialog, which) -> {
+                    if (which == 4) {
+                        resetSelectedClipTrim();
+                    } else if (which == 5) {
+                        reverseTimeline();
+                    } else {
+                        chooseTextForTool(which);
+                    }
+                })
+                .show();
+    }
+
+    private void chooseTextForTool(final int action) {
+        if (texts.isEmpty()) {
+            toast("Pehle + Text se text jodein");
+            return;
+        }
+        String[] items = new String[texts.size()];
+        for (int i = 0; i < texts.size(); i++) {
+            String value = texts.get(i).text.replace('\n', ' ');
+            if (value.length() > 24) value = value.substring(0, 24) + "...";
+            items[i] = (i + 1) + ". " + value;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("Text layer select karein")
+                .setItems(items, (dialog, index) -> applyTextTool(texts.get(index), action))
+                .show();
+    }
+
+    private void applyTextTool(TextLayer layer, int action) {
+        if (action == 0) {
+            TextLayer copy = layer.copy();
+            copy.xFrac = clamp(copy.xFrac + 0.04f);
+            copy.yFrac = clamp(copy.yFrac + 0.04f);
+            texts.add(copy);
+            rebuildOverlay();
+            saveProject(false);
+            toast("Text layer duplicate ho gayi");
+        } else if (action == 1) {
+            layer.align = (layer.align + 1) % 3;
+            rebuildOverlay();
+            saveProject(false);
+            String[] names = {"Left", "Center", "Right"};
+            toast("Text alignment: " + names[layer.align]);
+        } else if (action == 2) {
+            long now = timelineMs();
+            layer.startMs = now;
+            if (layer.endMs >= 0 && layer.endMs <= now) {
+                layer.endMs = now + 3000;
+            }
+            rebuildOverlay();
+            saveProject(false);
+            toast("Text start playhead par set ho gaya");
+        } else if (action == 3) {
+            long now = timelineMs();
+            if (now <= layer.startMs + 200) {
+                toast("Text end set karne ke liye playhead ko aage le jayein");
+                return;
+            }
+            layer.endMs = now;
+            rebuildOverlay();
+            saveProject(false);
+            toast("Text end playhead par set ho gaya");
+        }
+    }
+
+    private void resetSelectedClipTrim() {
+        int i = currentIndex();
+        if (i < 0) {
+            toast("Pehle clip select karein");
+            return;
+        }
+        pushUndo();
+        ClipItem clip = clips.get(i);
+        clip.startMs = 0;
+        clip.endMs = -1;
+        reload(i, 0);
+        saveProject(false);
+        toast("Selected clip ka trim reset ho gaya");
+    }
+
+    private void reverseTimeline() {
+        if (clips.size() < 2) {
+            toast("Reverse order ke liye 2 ya zyada clips chahiye");
+            return;
+        }
+        pushUndo();
+        Collections.reverse(clips);
+        reload(0, 0);
+        saveProject(false);
+        toast("Timeline ka clip order reverse ho gaya");
     }
 
     private void editText(final TextLayer layer) {
