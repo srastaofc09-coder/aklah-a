@@ -26,7 +26,7 @@ import androidx.media3.common.C;
 import androidx.media3.common.Effect;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.common.MediaItem;
-import androidx.media3.common.OverlaySettings;
+import androidx.media3.effect.OverlaySettings;
 import androidx.media3.common.audio.AudioProcessor;
 import androidx.media3.common.audio.SonicAudioProcessor;
 import androidx.media3.effect.Presentation;
@@ -336,9 +336,9 @@ public class ExportActivity extends AppCompatActivity {
                                 alpha = (t - (durationUs - edge)) / (float) edge;
                         }
                         final float opacity = Math.min(1f, Math.max(0f, alpha));
-                        return new OverlaySettings() {
-                            @Override public float getAlphaScale() { return opacity; }
-                        };
+                        return new OverlaySettings.Builder()
+                                .setAlphaScale(opacity)
+                                .build();
                     }
                 };
                 video.add(new OverlayEffect(ImmutableList.of(transitionOverlay)));
