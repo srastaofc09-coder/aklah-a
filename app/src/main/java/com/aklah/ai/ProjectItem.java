@@ -11,6 +11,7 @@ public class ProjectItem {
     public List<String> mediaUris = new ArrayList<>();
     public List<ClipItem> clips = new ArrayList<>();
     public List<TextLayer> texts = new ArrayList<>();
+    public List<AudioTrackItem> audioTracks = new ArrayList<>();
 
     public ProjectItem(String id, String name, long createdAt) {
         this.id = id;
