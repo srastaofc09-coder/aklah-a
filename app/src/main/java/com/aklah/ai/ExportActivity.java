@@ -55,6 +55,8 @@ import androidx.media3.transformer.VideoEncoderSettings;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.DataOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -134,6 +136,46 @@ public class ExportActivity extends AppCompatActivity {
             }
         }
         return null;
+    }
+
+    private File createSilenceWav(long durationMs) throws Exception {
+        int sampleRate = 44100;
+        int channels = 1;
+        int bits = 16;
+        long dataBytes = Math.max(0L, durationMs) * sampleRate * channels * (bits / 8) / 1000L;
+        File file = new File(getCacheDir(), "silence_" + durationMs + "_" + System.nanoTime() + ".wav");
+        try (DataOutputStream out = new DataOutputStream(new FileOutputStream(file))) {
+            out.writeBytes("RIFF");
+            writeLeInt(out, (int) (36L + dataBytes));
+            out.writeBytes("WAVE");
+            out.writeBytes("fmt ");
+            writeLeInt(out, 16);
+            writeLeShort(out, 1);
+            writeLeShort(out, channels);
+            writeLeInt(out, sampleRate);
+            writeLeInt(out, sampleRate * channels * bits / 8);
+            writeLeShort(out, channels * bits / 8);
+            writeLeShort(out, bits);
+            out.writeBytes("data");
+            writeLeInt(out, (int) dataBytes);
+            byte[] zeros = new byte[8192];
+            long left = dataBytes;
+            while (left > 0) {
+                int n = (int) Math.min(zeros.length, left);
+                out.write(zeros, 0, n);
+                left -= n;
+            }
+        }
+        return file;
+    }
+
+    private void writeLeInt(DataOutputStream out, int value) throws Exception {
+        out.writeByte(value & 0xff); out.writeByte((value >>> 8) & 0xff);
+        out.writeByte((value >>> 16) & 0xff); out.writeByte((value >>> 24) & 0xff);
+    }
+
+    private void writeLeShort(DataOutputStream out, int value) throws Exception {
+        out.writeByte(value & 0xff); out.writeByte((value >>> 8) & 0xff);
     }
 
     private boolean isAudio(String uri) {
@@ -399,6 +441,14 @@ public class ExportActivity extends AppCompatActivity {
             if (track == null || track.uri == null || track.muted || track.volume <= 0f
                     || !isAudio(track.uri)) continue;
             MediaItem audioMedia = new MediaItem.Builder().setUri(Uri.parse(track.uri)).build();
+            List<EditedMediaItem> audioSequenceItems = new ArrayList<>();
+            if (track.startMs > 0L) {
+                File silence = createSilenceWav(track.startMs);
+                MediaItem silenceMedia = new MediaItem.Builder().setUri(Uri.fromFile(silence)).build();
+                EditedMediaItem silenceItem = new EditedMediaItem.Builder(silenceMedia)
+                        .setRemoveVideo(true).build();
+                audioSequenceItems.add(silenceItem);
+            }
             EditedMediaItem.Builder audioItemBuilder = new EditedMediaItem.Builder(audioMedia);
             audioItemBuilder.setRemoveVideo(true);
             List<AudioProcessor> trackProcessors = new ArrayList<>();
@@ -408,8 +458,8 @@ public class ExportActivity extends AppCompatActivity {
             if (!trackProcessors.isEmpty()) {
                 audioItemBuilder.setEffects(new Effects(trackProcessors, Collections.emptyList()));
             }
-            compositionBuilder.addSequence(new EditedMediaItemSequence(
-                    Collections.singletonList(audioItemBuilder.build())));
+            audioSequenceItems.add(audioItemBuilder.build());
+            compositionBuilder.addSequence(new EditedMediaItemSequence(audioSequenceItems));
         }
 
         // Render project text layers into the final MP4 across the composition timeline.
