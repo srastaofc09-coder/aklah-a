@@ -41,6 +41,25 @@ public class ProjectStore {
                                 c.getLong("end")));
                     }
                 }
+                JSONArray texts = o.optJSONArray("texts");
+                if (texts != null) {
+                    for (int j = 0; j < texts.length(); j++) {
+                        JSONObject t = texts.getJSONObject(j);
+                        TextLayer tl = new TextLayer(t.getString("text"));
+                        tl.startMs = t.getLong("start");
+                        tl.endMs = t.getLong("end");
+                        tl.color = t.getInt("color");
+                        tl.bgColor = t.getInt("bg");
+                        tl.sizeSp = t.getInt("size");
+                        tl.bold = t.getBoolean("bold");
+                        tl.shadow = t.getBoolean("shadow");
+                        tl.rtl = t.getBoolean("rtl");
+                        tl.align = t.getInt("align");
+                        tl.xFrac = (float) t.getDouble("x");
+                        tl.yFrac = (float) t.getDouble("y");
+                        p.texts.add(tl);
+                    }
+                }
                 list.add(p);
             }
         } catch (Exception e) {
@@ -87,6 +106,24 @@ public class ProjectStore {
                     clips.put(co);
                 }
                 o.put("clips", clips);
+                JSONArray texts = new JSONArray();
+                for (TextLayer t : p.texts) {
+                    JSONObject to = new JSONObject();
+                    to.put("text", t.text);
+                    to.put("start", t.startMs);
+                    to.put("end", t.endMs);
+                    to.put("color", t.color);
+                    to.put("bg", t.bgColor);
+                    to.put("size", t.sizeSp);
+                    to.put("bold", t.bold);
+                    to.put("shadow", t.shadow);
+                    to.put("rtl", t.rtl);
+                    to.put("align", t.align);
+                    to.put("x", (double) t.xFrac);
+                    to.put("y", (double) t.yFrac);
+                    texts.put(to);
+                }
+                o.put("texts", texts);
                 arr.put(o);
             }
             context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
