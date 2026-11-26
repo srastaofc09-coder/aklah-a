@@ -26,6 +26,8 @@ import androidx.media3.effect.Presentation;
 import androidx.media3.effect.Brightness;
 import androidx.media3.effect.Contrast;
 import androidx.media3.effect.HslAdjustment;
+import androidx.media3.effect.GaussianBlur;
+import androidx.media3.effect.RgbAdjustment;
 import androidx.media3.effect.ScaleAndRotateTransformation;
 import androidx.media3.effect.SpeedChangeEffect;
 import androidx.media3.transformer.Composition;
@@ -177,6 +179,7 @@ public class ExportActivity extends AppCompatActivity {
             List<Effect> video = new ArrayList<>();
             if (c.rotationDegrees != 0) {
                 video.add(new ScaleAndRotateTransformation.Builder()
+                        .setScale(c.flipX ? -1f : 1f, c.flipY ? -1f : 1f)
                         .setRotationDegrees(c.rotationDegrees)
                         .build());
             }
@@ -188,6 +191,16 @@ public class ExportActivity extends AppCompatActivity {
                         .adjustSaturation((c.saturation - 1f) * 100f)
                         .build());
             }
+            if (Math.abs(c.redScale - 1f) > 0.001f
+                    || Math.abs(c.greenScale - 1f) > 0.001f
+                    || Math.abs(c.blueScale - 1f) > 0.001f) {
+                video.add(new RgbAdjustment.Builder()
+                        .setRedScale(c.redScale)
+                        .setGreenScale(c.greenScale)
+                        .setBlueScale(c.blueScale)
+                        .build());
+            }
+            if (c.blurSigma > 0.01f) video.add(new GaussianBlur(c.blurSigma));
             if (c.cropMode == 1) {
                 video.add(Presentation.createForAspectRatio(9f / 16f, Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP));
             } else if (c.cropMode == 2) {
