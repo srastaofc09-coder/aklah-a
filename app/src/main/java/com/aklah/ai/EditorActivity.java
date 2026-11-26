@@ -3,6 +3,7 @@ package com.aklah.ai;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.net.Uri;
+import android.content.ActivityNotFoundException;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -113,6 +114,7 @@ public class EditorActivity extends AppCompatActivity {
         addButton(r7, "Studio Tools", () -> showStudioTools());
         addButton(r7, "Add Subtitle", () -> addSubtitleAtPlayhead());
         addButton(r7, "Advanced Manual Tools", () -> showAdvancedManualBatch());
+        addButton(r7, "Audio Tracks", () -> manageAudioTracks());
         addButton(r3, "Project Save Karein", () -> saveProject(true));
         addButton(r3, "Export MP4", () -> openExport());
 
@@ -1509,6 +1511,99 @@ public class EditorActivity extends AppCompatActivity {
     }
 
     // ---------- Save / Export ----------
+
+    private static final int REQUEST_ADD_AUDIO_TRACK = 7412;
+
+    private void manageAudioTracks() {
+        String[] options = new String[project.audioTracks.size() + 1];
+        options[0] = "+ Add audio / music track";
+        for (int i = 0; i < project.audioTracks.size(); i++) {
+            AudioTrackItem t = project.audioTracks.get(i);
+            options[i + 1] = "Track " + (i + 1) + "  •  " + Math.round(t.volume * 100f)
+                    + "%" + (t.muted ? "  (MUTED)" : "");
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("MULTI AUDIO TRACKS")
+                .setItems(options, (d, which) -> {
+                    if (which == 0) {
+                        addAudioTrackPicker();
+                    } else {
+                        editAudioTrack(project.audioTracks.get(which - 1));
+                    }
+                })
+                .setNegativeButton("Close", null)
+                .show();
+    }
+
+    private void addAudioTrackPicker() {
+        Intent pick = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        pick.addCategory(Intent.CATEGORY_OPENABLE);
+        pick.setType("audio/*");
+        pick.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+        try {
+            startActivityForResult(pick, REQUEST_ADD_AUDIO_TRACK);
+        } catch (ActivityNotFoundException e) {
+            toast("Audio file picker nahi mila");
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_ADD_AUDIO_TRACK && resultCode == RESULT_OK
+                && data != null && data.getData() != null) {
+            Uri uri = data.getData();
+            try {
+                getContentResolver().takePersistableUriPermission(uri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            } catch (Exception ignored) { }
+            AudioTrackItem track = new AudioTrackItem(uri.toString());
+            project.audioTracks.add(track);
+            saveProject(false);
+            toast("Audio track added — " + project.audioTracks.size() + " track(s)");
+            manageAudioTracks();
+        }
+    }
+
+    private void editAudioTrack(AudioTrackItem track) {
+        LinearLayout panel = new LinearLayout(this);
+        panel.setOrientation(LinearLayout.VERTICAL);
+        panel.setPadding(dp(18), dp(12), dp(18), dp(8));
+        TextView label = new TextView(this);
+        label.setText("Track volume: " + Math.round(track.volume * 100f) + "%");
+        label.setTextColor(0xFFFFFFFF);
+        SeekBar volume = new SeekBar(this);
+        volume.setMax(100);
+        volume.setProgress(Math.round(track.volume * 100f));
+        volume.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar bar, int value, boolean fromUser) {
+                label.setText("Track volume: " + value + "%");
+            }
+            @Override public void onStartTrackingTouch(SeekBar bar) { }
+            @Override public void onStopTrackingTouch(SeekBar bar) { }
+        });
+        panel.addView(label);
+        panel.addView(volume);
+        new AlertDialog.Builder(this)
+                .setTitle("Audio track controls")
+                .setView(panel)
+                .setNeutralButton(track.muted ? "Unmute" : "Mute", (d, w) -> {
+                    track.muted = !track.muted;
+                    saveProject(false);
+                    manageAudioTracks();
+                })
+                .setNegativeButton("Delete track", (d, w) -> {
+                    project.audioTracks.remove(track);
+                    saveProject(false);
+                    toast("Audio track removed");
+                })
+                .setPositiveButton("Save", (d, w) -> {
+                    track.volume = volume.getProgress() / 100f;
+                    saveProject(false);
+                    manageAudioTracks();
+                })
+                .show();
+    }
 
     private void saveProject(boolean show) {
         project.clips = snapshot();
