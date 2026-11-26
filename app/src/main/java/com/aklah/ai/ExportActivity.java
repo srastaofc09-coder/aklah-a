@@ -26,6 +26,7 @@ import androidx.media3.common.C;
 import androidx.media3.common.Effect;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.common.MediaItem;
+import androidx.media3.common.OverlaySettings;
 import androidx.media3.common.audio.AudioProcessor;
 import androidx.media3.common.audio.SonicAudioProcessor;
 import androidx.media3.effect.Presentation;
@@ -270,6 +271,74 @@ public class ExportActivity extends AppCompatActivity {
                 }
                 TextureOverlay maskOverlay = BitmapOverlay.createStaticBitmapOverlay(maskBitmap);
                 video.add(new OverlayEffect(ImmutableList.of(maskOverlay)));
+            }
+
+            // Render clip boundary transitions in the export. Media3's current
+            // sequence is sequential (no overlap), so Crossfade is represented as
+            // a short fade-to/from-black approximation; Dip to Black and Wipe are
+            // rendered as actual black overlays at both clip boundaries.
+            if (c.transitionType > 0 && c.transitionDurationMs > 0L) {
+                final long transitionUs = Math.max(100_000L,
+                        Math.min(2_000_000L, c.transitionDurationMs * 1000L));
+                final long durationUs = clipDurationUs == C.TIME_UNSET
+                        ? Math.max(transitionUs * 2L, 3_000_000L) : clipDurationUs;
+                final int transitionMode = c.transitionType;
+                final Bitmap transitionBitmap = Bitmap.createBitmap(
+                        1920, 1080, Bitmap.Config.ARGB_8888);
+                TextureOverlay transitionOverlay = new BitmapOverlay() {
+                    private final Canvas transitionCanvas = new Canvas(transitionBitmap);
+                    private final Paint transitionPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    @Override
+                    public Bitmap getBitmap(long presentationTimeUs) {
+                        transitionBitmap.eraseColor(Color.TRANSPARENT);
+                        long t = Math.max(0L, presentationTimeUs);
+                        long edge = Math.min(transitionUs, Math.max(1L, durationUs / 2L));
+                        float alpha = 0f;
+                        boolean atStart = t < edge;
+                        boolean atEnd = t > durationUs - edge;
+                        if (transitionMode == 3) {
+                            float progress = atStart ? 1f - t / (float) edge
+                                    : atEnd ? (t - (durationUs - edge)) / (float) edge : 0f;
+                            if (progress > 0f) {
+                                transitionPaint.setColor(Color.BLACK);
+                                transitionPaint.setAlpha(255);
+                                float coverWidth = transitionBitmap.getWidth()
+                                        * Math.min(1f, Math.max(0f, progress));
+                                float left = atStart ? 0f
+                                        : transitionBitmap.getWidth() - coverWidth;
+                                transitionCanvas.drawRect(left, 0f, left + coverWidth,
+                                        transitionBitmap.getHeight(), transitionPaint);
+                            }
+                        } else if (atStart) {
+                            alpha = 1f - t / (float) edge;
+                        } else if (atEnd) {
+                            alpha = (t - (durationUs - edge)) / (float) edge;
+                        }
+                        if (transitionMode != 3 && alpha > 0f) {
+                            transitionPaint.setColor(Color.BLACK);
+                            transitionPaint.setAlpha(255);
+                            transitionCanvas.drawRect(0f, 0f, transitionBitmap.getWidth(),
+                                    transitionBitmap.getHeight(), transitionPaint);
+                        }
+                        return transitionBitmap;
+                    }
+                    @Override
+                    public OverlaySettings getOverlaySettings(long presentationTimeUs) {
+                        long t = Math.max(0L, presentationTimeUs);
+                        long edge = Math.min(transitionUs, Math.max(1L, durationUs / 2L));
+                        float alpha = 0f;
+                        if (transitionMode != 3) {
+                            if (t < edge) alpha = 1f - t / (float) edge;
+                            else if (t > durationUs - edge)
+                                alpha = (t - (durationUs - edge)) / (float) edge;
+                        }
+                        final float opacity = Math.min(1f, Math.max(0f, alpha));
+                        return new OverlaySettings() {
+                            @Override public float getAlphaScale() { return opacity; }
+                        };
+                    }
+                };
+                video.add(new OverlayEffect(ImmutableList.of(transitionOverlay)));
             }
 
             if (c.cropMode == 1) {
