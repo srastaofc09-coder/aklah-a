@@ -41,9 +41,10 @@ public class TextOverlayBuilder {
             final Bitmap empty = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888);
             final long startUs = l.startMs * 1000L;
             final long endUs = l.endMs < 0 ? Long.MAX_VALUE : l.endMs * 1000L;
-            final OverlaySettings settings = new OverlaySettings.Builder()
-                    .setBackgroundFrameAnchor(l.xFrac * 2f - 1f, 1f - l.yFrac * 2f)
-                    .build();
+            final int animationMode = l.animationMode;
+            final long animationUs = Math.max(1L, l.animationDurationMs) * 1000L;
+            final float baseX = l.xFrac * 2f - 1f;
+            final float baseY = 1f - l.yFrac * 2f;
 
             list.add(new BitmapOverlay() {
                 @Override
@@ -55,7 +56,31 @@ public class TextOverlayBuilder {
 
                 @Override
                 public OverlaySettings getOverlaySettings(long presentationTimeUs) {
-                    return settings;
+                    long elapsedUs = Math.max(0L, presentationTimeUs - startUs);
+                    float progress = Math.min(1f, elapsedUs / (float) animationUs);
+                    float alpha = 1f;
+                    float scaleValue = 1f;
+                    float x = baseX;
+                    float y = baseY;
+                    if (animationMode == 1 || animationMode == 4) {
+                        alpha = progress;
+                    } else if (animationMode == 2) {
+                        y = baseY - (1f - progress) * 0.35f;
+                        alpha = progress;
+                    } else if (animationMode == 3) {
+                        scaleValue = 0.65f + 0.35f * progress;
+                        alpha = progress;
+                    }
+                    if (animationMode == 4 && endUs != Long.MAX_VALUE) {
+                        long remainingUs = Math.max(0L, endUs - presentationTimeUs);
+                        float outProgress = Math.min(1f, remainingUs / (float) animationUs);
+                        alpha = Math.min(alpha, outProgress);
+                    }
+                    return new OverlaySettings.Builder()
+                            .setBackgroundFrameAnchor(x, y)
+                            .setAlphaScale(Math.max(0f, Math.min(1f, alpha)))
+                            .setScale(scaleValue, scaleValue)
+                            .build();
                 }
             });
         }
