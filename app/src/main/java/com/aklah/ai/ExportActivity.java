@@ -167,6 +167,7 @@ public class ExportActivity extends AppCompatActivity {
                                     .build())
                     .build();
             EditedMediaItem.Builder eb = new EditedMediaItem.Builder(mi);
+            eb.setRemoveAudio(c.muted);
             if (height > 0) {
                 List<Effect> video = new ArrayList<>();
                 video.add(Presentation.createForHeight(height));
