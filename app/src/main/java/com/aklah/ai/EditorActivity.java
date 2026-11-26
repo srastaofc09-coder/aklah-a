@@ -13,6 +13,7 @@ import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -333,6 +334,7 @@ public class EditorActivity extends AppCompatActivity {
         }
         int i = currentIndex();
         player.setVolume(i >= 0 && clips.get(i).muted ? 0f : 1f);
+        if (i >= 0) player.setPlaybackSpeed(clips.get(i).speed);
     }
 
     private void deleteClip() {
@@ -558,17 +560,17 @@ public class EditorActivity extends AppCompatActivity {
         final String[] titles = {
                 "Duplicate Text", "Text Alignment", "Text Start", "Text End",
                 "Reset Clip Trim", "Reverse Timeline", "Mute All Clips",
-                "Unmute All Clips", "First Clip", "Next Clip"
+                "Unmute All Clips", "First Clip", "Next Clip", "ADVANCED CLIP LAB"
         };
         final String[] subtitles = {
                 "Copy selected overlay", "Cycle left / center / right",
                 "Start overlay at playhead", "End overlay at playhead",
                 "Restore full clip", "Reverse clip order",
                 "Turn off clip audio", "Restore clip audio",
-                "Jump to beginning", "Move to next clip"
+                "Jump to beginning", "Move to next clip", "Rotate • crop • speed • color"
         };
-        final String[] icons = {"⧉", "↔", "◷", "◴", "⟲", "⇄", "🔇", "🔊", "⏮", "⏭"};
-        final int[] actions = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+        final String[] icons = {"⧉", "↔", "◷", "◴", "⟲", "⇄", "🔇", "🔊", "⏮", "⏭", "✦"};
+        final int[] actions = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -739,6 +741,145 @@ public class EditorActivity extends AppCompatActivity {
         }
     }
 
+
+    // ---------- Advanced clip editing batch ----------
+    private ClipItem selectedClip() {
+        int i = currentIndex();
+        if (i < 0 || i >= clips.size()) {
+            toast("Pehle timeline mein clip select karein");
+            return null;
+        }
+        return clips.get(i);
+    }
+
+    private void showAdvancedClipTools() {
+        ClipItem c = selectedClip();
+        if (c == null) return;
+        final String[] tools = {
+                "Rotate 90°", "Rotate 180°", "Rotate 270°", "Reset Rotation",
+                "Crop / Aspect Ratio", "Playback Speed", "Color Adjustments",
+                "Reset All Advanced Edits"
+        };
+        new AlertDialog.Builder(this)
+                .setTitle("ADVANCED CLIP LAB")
+                .setItems(tools, (d, which) -> {
+                    ClipItem clip = selectedClip();
+                    if (clip == null) return;
+                    pushUndo();
+                    switch (which) {
+                        case 0: clip.rotationDegrees = (clip.rotationDegrees + 90) % 360; break;
+                        case 1: clip.rotationDegrees = (clip.rotationDegrees + 180) % 360; break;
+                        case 2: clip.rotationDegrees = (clip.rotationDegrees + 270) % 360; break;
+                        case 3: clip.rotationDegrees = 0; break;
+                        case 4: chooseCropMode(clip); return;
+                        case 5: chooseClipSpeed(clip); return;
+                        case 6: showColorAdjustments(clip); return;
+                        case 7:
+                            clip.rotationDegrees = 0;
+                            clip.cropMode = 0;
+                            clip.speed = 1f;
+                            clip.brightness = 0f;
+                            clip.contrast = 1f;
+                            clip.saturation = 1f;
+                            break;
+                    }
+                    saveProject(false);
+                    applyCurrentClipAudio();
+                    refreshStrip();
+                    toast("Advanced edit save ho gaya; export par apply hoga");
+                })
+                .show();
+    }
+
+    private void chooseCropMode(ClipItem clip) {
+        final String[] options = {"Original", "Vertical 9:16", "Square 1:1", "Landscape 16:9"};
+        new AlertDialog.Builder(this)
+                .setTitle("Crop / Aspect Ratio")
+                .setSingleChoiceItems(options, clip.cropMode, (dialog, which) -> {
+                    pushUndo();
+                    clip.cropMode = which;
+                    saveProject(false);
+                    refreshStrip();
+                    dialog.dismiss();
+                    toast("Aspect ratio export par apply hoga");
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void chooseClipSpeed(ClipItem clip) {
+        final float[] speeds = {0.25f, 0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f, 3f};
+        final String[] labels = {"0.25×", "0.5×", "0.75×", "1× Normal", "1.25×", "1.5×", "2×", "3×"};
+        int selected = 3;
+        for (int i = 0; i < speeds.length; i++) if (Math.abs(clip.speed - speeds[i]) < 0.01f) selected = i;
+        new AlertDialog.Builder(this)
+                .setTitle("Clip Speed • Preview")
+                .setSingleChoiceItems(labels, selected, (dialog, which) -> {
+                    pushUndo();
+                    clip.speed = speeds[which];
+                    if (player != null && currentIndex() >= 0) player.setPlaybackSpeed(clip.speed);
+                    saveProject(false);
+                    dialog.dismiss();
+                    toast("Preview speed set. Export speed processing needs a compatible transformer build.");
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void showColorAdjustments(ClipItem clip) {
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(dp(18), dp(12), dp(18), dp(8));
+        TextView note = new TextView(this);
+        note.setText("Color settings are saved per clip and applied during MP4 export.");
+        note.setTextColor(0xFFB8BBC4);
+        root.addView(note);
+        SeekBar brightness = new SeekBar(this);
+        brightness.setMax(200);
+        brightness.setProgress(Math.round((clip.brightness + 1f) * 100f));
+        SeekBar contrast = new SeekBar(this);
+        contrast.setMax(200);
+        contrast.setProgress(Math.round(clip.contrast * 100f));
+        SeekBar saturation = new SeekBar(this);
+        saturation.setMax(200);
+        saturation.setProgress(Math.round(clip.saturation * 100f));
+        addColorControl(root, "Brightness", brightness);
+        addColorControl(root, "Contrast", contrast);
+        addColorControl(root, "Saturation", saturation);
+        new AlertDialog.Builder(this)
+                .setTitle("Color Adjustments")
+                .setView(root)
+                .setPositiveButton("Apply", (dialog, which) -> {
+                    pushUndo();
+                    clip.brightness = brightness.getProgress() / 100f - 1f;
+                    clip.contrast = contrast.getProgress() / 100f;
+                    clip.saturation = saturation.getProgress() / 100f;
+                    saveProject(false);
+                    toast("Color adjustments save ho gaye; export par apply honge");
+                })
+                .setNeutralButton("Reset", (dialog, which) -> {
+                    pushUndo();
+                    clip.brightness = 0f;
+                    clip.contrast = 1f;
+                    clip.saturation = 1f;
+                    saveProject(false);
+                    toast("Color reset ho gaya");
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void addColorControl(LinearLayout root, String label, SeekBar seek) {
+        TextView title = new TextView(this);
+        title.setText(label);
+        title.setTextColor(0xFFFFD66B);
+        title.setTextSize(13);
+        title.setPadding(0, dp(8), 0, 0);
+        root.addView(title);
+        root.addView(seek, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(38)));
+    }
+
     private void performMoreTool(int action) {
         switch (action) {
             case 4: resetSelectedClipTrim(); break;
@@ -753,6 +894,7 @@ public class EditorActivity extends AppCompatActivity {
                     player.seekToDefaultPosition(currentIndex() + 1);
                 else toast("Next clip nahi hai");
                 break;
+            case 10: showAdvancedClipTools(); break;
         }
     }
 
