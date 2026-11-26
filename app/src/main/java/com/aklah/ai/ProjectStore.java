@@ -40,6 +40,9 @@ public class ProjectStore {
                                 c.getLong("start"),
                                 c.getLong("end"));
                         clip.muted = c.optBoolean("muted", false);
+                        clip.volume = (float) c.optDouble("volume", 1.0);
+                        clip.fadeInMs = c.optLong("fadeInMs", 0L);
+                        clip.fadeOutMs = c.optLong("fadeOutMs", 0L);
                         clip.rotationDegrees = c.optInt("rotation", 0);
                         clip.cropMode = c.optInt("crop", 0);
                         clip.speed = (float) c.optDouble("speed", 1.0);
@@ -118,6 +121,9 @@ public class ProjectStore {
                     co.put("start", c.startMs);
                     co.put("end", c.endMs);
                     co.put("muted", c.muted);
+                    co.put("volume", c.volume);
+                    co.put("fadeInMs", c.fadeInMs);
+                    co.put("fadeOutMs", c.fadeOutMs);
                     co.put("rotation", c.rotationDegrees);
                     co.put("crop", c.cropMode);
                     co.put("speed", c.speed);
