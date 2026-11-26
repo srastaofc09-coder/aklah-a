@@ -74,6 +74,8 @@ public class ProjectStore {
                         tl.align = t.getInt("align");
                         tl.xFrac = (float) t.getDouble("x");
                         tl.yFrac = (float) t.getDouble("y");
+                        tl.animationMode = t.optInt("animationMode", 0);
+                        tl.animationDurationMs = t.optLong("animationDurationMs", 600L);
                         p.texts.add(tl);
                     }
                 }
@@ -154,6 +156,8 @@ public class ProjectStore {
                     to.put("align", t.align);
                     to.put("x", (double) t.xFrac);
                     to.put("y", (double) t.yFrac);
+                    to.put("animationMode", t.animationMode);
+                    to.put("animationDurationMs", t.animationDurationMs);
                     texts.put(to);
                 }
                 o.put("texts", texts);
