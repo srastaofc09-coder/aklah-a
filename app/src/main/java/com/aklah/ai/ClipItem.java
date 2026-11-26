@@ -17,7 +17,7 @@ public class ClipItem {
     public float blurSigma = 0f;
     public float redScale = 1f;
     public float greenScale = 1f;
-    public float blueScale = 1f
+    public float blueScale = 1f;
 
     public ClipItem(String uri, long startMs, long endMs) {
         this.uri = uri;
