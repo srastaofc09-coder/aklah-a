@@ -900,7 +900,7 @@ public class EditorActivity extends AppCompatActivity {
                                     c.transitionDurationMs = selected == 0 ? 0L : 500L;
                                     saveProject(false); refreshStrip();
                                     d.dismiss();
-                                    toast("Transition choice saved. It still needs transition rendering in export.");
+                                    toast(selected == 0 ? "Transition removed" : "Transition saved; export renders boundary fade/wipe (crossfade uses black-fade approximation).");
                                 }).setNegativeButton("Cancel", null).show();
                     } else if (which == 1) {
                         LinearLayout box = new LinearLayout(this); box.setOrientation(LinearLayout.VERTICAL);
