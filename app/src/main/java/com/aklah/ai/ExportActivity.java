@@ -2,6 +2,7 @@ package com.aklah.ai;
 
 import android.content.ContentValues;
 import android.content.Intent;
+import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -24,6 +25,8 @@ import androidx.media3.common.audio.AudioProcessor;
 import androidx.media3.common.audio.SonicAudioProcessor;
 import androidx.media3.effect.Presentation;
 import androidx.media3.effect.Brightness;
+import androidx.media3.effect.OverlayEffect;
+import androidx.media3.effect.TextureOverlay;
 import androidx.media3.effect.Contrast;
 import androidx.media3.effect.HslAdjustment;
 import androidx.media3.effect.GaussianBlur;
@@ -128,6 +131,22 @@ public class ExportActivity extends AppCompatActivity {
         return type != null && type.startsWith("video/");
     }
 
+    private long getTrimmedClipDurationMs(ClipItem clip) {
+        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+        try {
+            retriever.setDataSource(this, Uri.parse(clip.uri));
+            String value = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+            long sourceDuration = value == null ? -1L : Long.parseLong(value);
+            if (sourceDuration <= 0L) return -1L;
+            long end = clip.endMs < 0L ? sourceDuration : Math.min(sourceDuration, clip.endMs);
+            return Math.max(0L, end - Math.max(0L, clip.startMs));
+        } catch (Exception ignored) {
+            return -1L;
+        } finally {
+            try { retriever.release(); } catch (Exception ignored) { }
+        }
+    }
+
     private void startExport() {
         if (transformer != null) {
             return;
@@ -161,6 +180,7 @@ public class ExportActivity extends AppCompatActivity {
         }
 
         List<EditedMediaItem> items = new ArrayList<>();
+        long projectTimelineOffsetMs = 0L;
         for (ClipItem c : source) {
             if (!isVideo(c.uri)) {
                 continue;
@@ -177,6 +197,11 @@ public class ExportActivity extends AppCompatActivity {
             EditedMediaItem.Builder eb = new EditedMediaItem.Builder(mi);
             eb.setRemoveAudio(c.muted);
             List<Effect> video = new ArrayList<>();
+            if (project != null && project.texts != null && !project.texts.isEmpty()) {
+                List<TextureOverlay> textOverlays = new ArrayList<>();
+                textOverlays.add(new TextOverlayCanvas(project.texts, projectTimelineOffsetMs));
+                video.add(new OverlayEffect(textOverlays));
+            }
             // Apply the transform when either rotation OR a flip is selected.
             // Previously flip-only edits were skipped because this block checked rotation alone.
             if (c.rotationDegrees != 0 || c.flipX || c.flipY) {
@@ -222,6 +247,10 @@ public class ExportActivity extends AppCompatActivity {
                 eb.setEffects(new Effects(audio, video));
             }
             items.add(eb.build());
+            long clipDurationMs = getTrimmedClipDurationMs(c);
+            if (clipDurationMs > 0L) {
+                projectTimelineOffsetMs += Math.max(1L, Math.round(clipDurationMs / Math.max(0.25f, c.speed)));
+            }
         }
 
         if (items.isEmpty()) {
