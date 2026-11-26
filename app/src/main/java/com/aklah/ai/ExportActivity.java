@@ -1,6 +1,9 @@
 package com.aklah.ai;
 
 import android.content.ContentValues;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
@@ -19,12 +22,16 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.media3.common.C;
 import androidx.media3.common.Effect;
+import androidx.media3.common.util.UnstableApi;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.audio.AudioProcessor;
 import androidx.media3.common.audio.SonicAudioProcessor;
 import androidx.media3.effect.Presentation;
 import androidx.media3.effect.Brightness;
 import androidx.media3.effect.Contrast;
+import androidx.media3.effect.CanvasOverlay;
+import androidx.media3.effect.OverlayEffect;
+import androidx.media3.effect.TextureOverlay;
 import androidx.media3.effect.HslAdjustment;
 import androidx.media3.effect.GaussianBlur;
 import androidx.media3.effect.RgbAdjustment;
@@ -49,6 +56,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+@UnstableApi
 public class ExportActivity extends AppCompatActivity {
 
     private ProjectItem project;
@@ -204,6 +212,32 @@ public class ExportActivity extends AppCompatActivity {
                         .build());
             }
             if (c.blurSigma > 0.01f) video.add(new GaussianBlur(c.blurSigma));
+            // Privacy mask: render a fixed opaque cover into each clip's export frames.
+            // Preview positioning is not yet wired; normalized bounds are persisted per clip.
+            if (c.maskEnabled) {
+                TextureOverlay maskOverlay = new CanvasOverlay(true) {
+                    private final Paint maskPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    @Override
+                    public void onDraw(Canvas canvas, long presentationTimeUs) {
+                        float left = canvas.getWidth() * c.maskX;
+                        float top = canvas.getHeight() * c.maskY;
+                        float right = left + canvas.getWidth() * c.maskWidth;
+                        float bottom = top + canvas.getHeight() * c.maskHeight;
+                        maskPaint.setColor(Color.BLACK);
+                        maskPaint.setStyle(Paint.Style.FILL);
+                        if (c.maskMode == 1) {
+                            float radius = Math.min(right - left, bottom - top) / 2f;
+                            canvas.drawCircle((left + right) / 2f, (top + bottom) / 2f, radius, maskPaint);
+                        } else {
+                            // Mode 0 and blur-mode fallback use a solid cover to ensure the
+                            // selected region is concealed in the exported video.
+                            canvas.drawRect(left, top, right, bottom, maskPaint);
+                        }
+                    }
+                };
+                video.add(new OverlayEffect(Collections.singletonList(maskOverlay)));
+            }
+
             if (c.cropMode == 1) {
                 video.add(Presentation.createForAspectRatio(9f / 16f, Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP));
             } else if (c.cropMode == 2) {
