@@ -5,6 +5,7 @@ public class ClipItem {
     public String uri;
     public long startMs;
     public long endMs; // -1 ka matlab clip ke end tak
+    public boolean muted = false;
 
     public ClipItem(String uri, long startMs, long endMs) {
         this.uri = uri;
@@ -13,6 +14,8 @@ public class ClipItem {
     }
 
     public ClipItem copy() {
-        return new ClipItem(uri, startMs, endMs);
+        ClipItem copy = new ClipItem(uri, startMs, endMs);
+        copy.muted = muted;
+        return copy;
     }
 }
