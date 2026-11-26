@@ -449,28 +449,86 @@ public class EditorActivity extends AppCompatActivity {
     }
 
     private void showTextStylePresets(final TextLayer layer) {
-        String[] styles = {"Gold Islamic", "White Caption", "Green Arabic"};
+        final String[] styles = {
+                "Gold Islamic", "White Caption", "Green Arabic",
+                "Royal Purple", "Sky Blue", "Rose Pink",
+                "Sunset Orange", "Cyan Glow", "Classic Black",
+                "Clean White", "Emerald Green", "Ruby Red",
+                "Lavender", "Desert Sand", "Arabic Emerald RTL",
+                "Silver Title", "Ocean Blue", "Soft Peach",
+                "Neon Lime", "Golden Banner"
+        };
         new AlertDialog.Builder(this)
-                .setTitle("Text Style Preset")
+                .setTitle("Choose Text Style (20)")
                 .setItems(styles, (dlg, which) -> {
-                    if (which == 0) {
-                        layer.color = 0xFFFFD700;
-                        layer.bgColor = 0x66000000;
-                        layer.sizeSp = 30;
-                        layer.bold = true;
-                        layer.shadow = true;
-                    } else if (which == 1) {
-                        layer.color = 0xFFFFFFFF;
-                        layer.bgColor = 0x99000000;
-                        layer.sizeSp = 24;
-                        layer.bold = false;
-                        layer.shadow = true;
-                    } else {
-                        layer.color = 0xFF7CFC00;
-                        layer.bgColor = 0x66000000;
-                        layer.sizeSp = 32;
-                        layer.bold = true;
-                        layer.shadow = true;
+                    layer.rtl = false;
+                    layer.color = 0xFFFFFFFF;
+                    layer.bgColor = 0x66000000;
+                    layer.sizeSp = 28;
+                    layer.bold = true;
+                    layer.shadow = true;
+
+                    switch (which) {
+                        case 0:
+                            layer.color = 0xFFFFD700; layer.bgColor = 0x66000000;
+                            layer.sizeSp = 30; break;
+                        case 1:
+                            layer.color = 0xFFFFFFFF; layer.bgColor = 0x99000000;
+                            layer.sizeSp = 24; layer.bold = false; break;
+                        case 2:
+                            layer.color = 0xFF7CFC00; layer.bgColor = 0x66000000;
+                            layer.sizeSp = 32; break;
+                        case 3:
+                            layer.color = 0xFFE6C7FF; layer.bgColor = 0xAA32105A;
+                            layer.sizeSp = 32; break;
+                        case 4:
+                            layer.color = 0xFF7FDBFF; layer.bgColor = 0x88203355;
+                            layer.sizeSp = 28; break;
+                        case 5:
+                            layer.color = 0xFFFFB6C1; layer.bgColor = 0x883B1020;
+                            layer.sizeSp = 30; break;
+                        case 6:
+                            layer.color = 0xFFFFA500; layer.bgColor = 0x882B1600;
+                            layer.sizeSp = 32; break;
+                        case 7:
+                            layer.color = 0xFF00FFFF; layer.bgColor = 0x88203344;
+                            layer.sizeSp = 30; break;
+                        case 8:
+                            layer.color = 0xFF111111; layer.bgColor = 0xCCFFFFFF;
+                            layer.sizeSp = 28; layer.shadow = false; break;
+                        case 9:
+                            layer.color = 0xFFFFFFFF; layer.bgColor = 0;
+                            layer.sizeSp = 26; layer.bold = false; break;
+                        case 10:
+                            layer.color = 0xFF50C878; layer.bgColor = 0x8820442B;
+                            layer.sizeSp = 30; break;
+                        case 11:
+                            layer.color = 0xFFFF5252; layer.bgColor = 0x882B0000;
+                            layer.sizeSp = 30; break;
+                        case 12:
+                            layer.color = 0xFFE6E6FA; layer.bgColor = 0x88452A65;
+                            layer.sizeSp = 30; break;
+                        case 13:
+                            layer.color = 0xFFF4D7A1; layer.bgColor = 0x884A3219;
+                            layer.sizeSp = 30; break;
+                        case 14:
+                            layer.color = 0xFF7CFC00; layer.bgColor = 0x66303030;
+                            layer.sizeSp = 34; layer.rtl = true; break;
+                        case 15:
+                            layer.color = 0xFFC0C0C0; layer.bgColor = 0x88000000;
+                            layer.sizeSp = 32; break;
+                        case 16:
+                            layer.color = 0xFF40C4FF; layer.bgColor = 0x88332211;
+                            layer.sizeSp = 30; break;
+                        case 17:
+                            layer.color = 0xFFFFDAB9; layer.bgColor = 0x88442211;
+                            layer.sizeSp = 28; layer.bold = false; break;
+                        case 18:
+                            layer.color = 0xFFBFFF00; layer.bgColor = 0x88334400;
+                            layer.sizeSp = 32; break;
+                        case 19:
+                            layer.color = 0xFFFFD700; layer.bgColor = 0xCC3B2A00;
+                            layer.sizeSp = 34; break;
                     }
                     rebuildOverlay();
                     saveProject(false);
