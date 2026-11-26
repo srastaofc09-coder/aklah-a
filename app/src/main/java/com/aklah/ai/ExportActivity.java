@@ -24,7 +24,7 @@ import androidx.media3.common.audio.AudioProcessor;
 import androidx.media3.effect.Presentation;
 import androidx.media3.effect.Brightness;
 import androidx.media3.effect.Contrast;
-import androidx.media3.effect.Saturation;
+import androidx.media3.effect.HslAdjustment;
 import androidx.media3.effect.ScaleAndRotateTransformation;
 import androidx.media3.effect.SpeedChangeEffect;
 import androidx.media3.transformer.Composition;
@@ -182,7 +182,11 @@ public class ExportActivity extends AppCompatActivity {
             if (Math.abs(c.speed - 1f) > 0.001f) video.add(new SpeedChangeEffect(c.speed));
             if (Math.abs(c.brightness) > 0.001f) video.add(new Brightness(c.brightness));
             if (Math.abs(c.contrast - 1f) > 0.001f) video.add(new Contrast(c.contrast));
-            if (Math.abs(c.saturation - 1f) > 0.001f) video.add(new Saturation(c.saturation));
+            if (Math.abs(c.saturation - 1f) > 0.001f) {
+                video.add(new HslAdjustment.Builder()
+                        .adjustSaturation((c.saturation - 1f) * 100f)
+                        .build());
+            }
             if (c.cropMode == 1) {
                 video.add(Presentation.createForAspectRatio(9f / 16f, Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP));
             } else if (c.cropMode == 2) {
