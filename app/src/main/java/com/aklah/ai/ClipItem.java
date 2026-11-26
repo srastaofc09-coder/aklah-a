@@ -6,6 +6,9 @@ public class ClipItem {
     public long startMs;
     public long endMs; // -1 ka matlab clip ke end tak
     public boolean muted = false;
+    public float volume = 1f; // 0..1 per-clip audio gain
+    public long fadeInMs = 0L;
+    public long fadeOutMs = 0L;
     public int rotationDegrees = 0;
     public int cropMode = 0; // 0 original, 1 vertical, 2 square, 3 landscape
     public float speed = 1f;
@@ -28,6 +31,9 @@ public class ClipItem {
     public ClipItem copy() {
         ClipItem copy = new ClipItem(uri, startMs, endMs);
         copy.muted = muted;
+        copy.volume = volume;
+        copy.fadeInMs = fadeInMs;
+        copy.fadeOutMs = fadeOutMs;
         copy.rotationDegrees = rotationDegrees;
         copy.cropMode = cropMode;
         copy.speed = speed;
