@@ -449,93 +449,108 @@ public class EditorActivity extends AppCompatActivity {
                 .show();
     }
 
+    private void applyTextStyle(final TextLayer layer, int which) {
+        layer.rtl = false;
+        layer.color = 0xFFFFFFFF;
+        layer.bgColor = 0x66000000;
+        layer.sizeSp = 28;
+        layer.bold = true;
+        layer.shadow = true;
+        switch (which) {
+            case 0: layer.color = 0xFFFFD700; layer.bgColor = 0x66000000; layer.sizeSp = 30; break;
+            case 1: layer.color = 0xFFFFFFFF; layer.bgColor = 0x99000000; layer.sizeSp = 24; layer.bold = false; break;
+            case 2: layer.color = 0xFF7CFC00; layer.bgColor = 0x66000000; layer.sizeSp = 32; break;
+            case 3: layer.color = 0xFFE6C7FF; layer.bgColor = 0xAA32105A; layer.sizeSp = 32; break;
+            case 4: layer.color = 0xFF7FDBFF; layer.bgColor = 0x88203355; layer.sizeSp = 28; break;
+            case 5: layer.color = 0xFFFFB6C1; layer.bgColor = 0x883B1020; layer.sizeSp = 30; break;
+            case 6: layer.color = 0xFFFFA500; layer.bgColor = 0x882B1600; layer.sizeSp = 32; break;
+            case 7: layer.color = 0xFF00FFFF; layer.bgColor = 0x88203344; layer.sizeSp = 30; break;
+            case 8: layer.color = 0xFF111111; layer.bgColor = 0xCCFFFFFF; layer.sizeSp = 28; layer.shadow = false; break;
+            case 9: layer.color = 0xFFFFFFFF; layer.bgColor = 0; layer.sizeSp = 26; layer.bold = false; break;
+            case 10: layer.color = 0xFF50C878; layer.bgColor = 0x8820442B; layer.sizeSp = 30; break;
+            case 11: layer.color = 0xFFFF5252; layer.bgColor = 0x882B0000; layer.sizeSp = 30; break;
+            case 12: layer.color = 0xFFE6E6FA; layer.bgColor = 0x88452A65; layer.sizeSp = 30; break;
+            case 13: layer.color = 0xFFF4D7A1; layer.bgColor = 0x884A3219; layer.sizeSp = 30; break;
+            case 14: layer.color = 0xFF7CFC00; layer.bgColor = 0x66303030; layer.sizeSp = 34; layer.rtl = true; break;
+            case 15: layer.color = 0xFFC0C0C0; layer.bgColor = 0x88000000; layer.sizeSp = 32; break;
+            case 16: layer.color = 0xFF40C4FF; layer.bgColor = 0x88332211; layer.sizeSp = 30; break;
+            case 17: layer.color = 0xFFFFDAB9; layer.bgColor = 0x88442211; layer.sizeSp = 28; layer.bold = false; break;
+            case 18: layer.color = 0xFFBFFF00; layer.bgColor = 0x88334400; layer.sizeSp = 32; break;
+            case 19: layer.color = 0xFFFFD700; layer.bgColor = 0xCC3B2A00; layer.sizeSp = 34; break;
+        }
+        rebuildOverlay();
+        saveProject(false);
+        toast("Text style apply ho gaya");
+    }
+
     private void showTextStylePresets(final TextLayer layer) {
         final String[] styles = {
-                "Gold Islamic", "White Caption", "Green Arabic",
-                "Royal Purple", "Sky Blue", "Rose Pink",
-                "Sunset Orange", "Cyan Glow", "Classic Black",
-                "Clean White", "Emerald Green", "Ruby Red",
-                "Lavender", "Desert Sand", "Arabic Emerald RTL",
-                "Silver Title", "Ocean Blue", "Soft Peach",
-                "Neon Lime", "Golden Banner"
+                "Gold Islamic", "White Caption", "Green Arabic", "Royal Purple",
+                "Sky Blue", "Rose Pink", "Sunset Orange", "Cyan Glow",
+                "Classic Black", "Clean White", "Emerald Green", "Ruby Red",
+                "Lavender", "Desert Sand", "Arabic Emerald RTL", "Silver Title",
+                "Ocean Blue", "Soft Peach", "Neon Lime", "Golden Banner"
         };
-        new AlertDialog.Builder(this)
-                .setTitle("Choose Text Style (20)")
-                .setItems(styles, (dlg, which) -> {
-                    layer.rtl = false;
-                    layer.color = 0xFFFFFFFF;
-                    layer.bgColor = 0x66000000;
-                    layer.sizeSp = 28;
-                    layer.bold = true;
-                    layer.shadow = true;
-
-                    switch (which) {
-                        case 0:
-                            layer.color = 0xFFFFD700; layer.bgColor = 0x66000000;
-                            layer.sizeSp = 30; break;
-                        case 1:
-                            layer.color = 0xFFFFFFFF; layer.bgColor = 0x99000000;
-                            layer.sizeSp = 24; layer.bold = false; break;
-                        case 2:
-                            layer.color = 0xFF7CFC00; layer.bgColor = 0x66000000;
-                            layer.sizeSp = 32; break;
-                        case 3:
-                            layer.color = 0xFFE6C7FF; layer.bgColor = 0xAA32105A;
-                            layer.sizeSp = 32; break;
-                        case 4:
-                            layer.color = 0xFF7FDBFF; layer.bgColor = 0x88203355;
-                            layer.sizeSp = 28; break;
-                        case 5:
-                            layer.color = 0xFFFFB6C1; layer.bgColor = 0x883B1020;
-                            layer.sizeSp = 30; break;
-                        case 6:
-                            layer.color = 0xFFFFA500; layer.bgColor = 0x882B1600;
-                            layer.sizeSp = 32; break;
-                        case 7:
-                            layer.color = 0xFF00FFFF; layer.bgColor = 0x88203344;
-                            layer.sizeSp = 30; break;
-                        case 8:
-                            layer.color = 0xFF111111; layer.bgColor = 0xCCFFFFFF;
-                            layer.sizeSp = 28; layer.shadow = false; break;
-                        case 9:
-                            layer.color = 0xFFFFFFFF; layer.bgColor = 0;
-                            layer.sizeSp = 26; layer.bold = false; break;
-                        case 10:
-                            layer.color = 0xFF50C878; layer.bgColor = 0x8820442B;
-                            layer.sizeSp = 30; break;
-                        case 11:
-                            layer.color = 0xFFFF5252; layer.bgColor = 0x882B0000;
-                            layer.sizeSp = 30; break;
-                        case 12:
-                            layer.color = 0xFFE6E6FA; layer.bgColor = 0x88452A65;
-                            layer.sizeSp = 30; break;
-                        case 13:
-                            layer.color = 0xFFF4D7A1; layer.bgColor = 0x884A3219;
-                            layer.sizeSp = 30; break;
-                        case 14:
-                            layer.color = 0xFF7CFC00; layer.bgColor = 0x66303030;
-                            layer.sizeSp = 34; layer.rtl = true; break;
-                        case 15:
-                            layer.color = 0xFFC0C0C0; layer.bgColor = 0x88000000;
-                            layer.sizeSp = 32; break;
-                        case 16:
-                            layer.color = 0xFF40C4FF; layer.bgColor = 0x88332211;
-                            layer.sizeSp = 30; break;
-                        case 17:
-                            layer.color = 0xFFFFDAB9; layer.bgColor = 0x88442211;
-                            layer.sizeSp = 28; layer.bold = false; break;
-                        case 18:
-                            layer.color = 0xFFBFFF00; layer.bgColor = 0x88334400;
-                            layer.sizeSp = 32; break;
-                        case 19:
-                            layer.color = 0xFFFFD700; layer.bgColor = 0xCC3B2A00;
-                            layer.sizeSp = 34; break;
-                    }
-                    rebuildOverlay();
-                    saveProject(false);
-                    toast("Text style apply ho gaya");
-                })
-                .show();
+        final int[] colors = {
+                0xFFFFD700, 0xFFFFFFFF, 0xFF7CFC00, 0xFFE6C7FF, 0xFF7FDBFF,
+                0xFFFFB6C1, 0xFFFFA500, 0xFF00FFFF, 0xFF111111, 0xFFFFFFFF,
+                0xFF50C878, 0xFFFF5252, 0xFFE6E6FA, 0xFFF4D7A1, 0xFF7CFC00,
+                0xFFC0C0C0, 0xFF40C4FF, 0xFFFFDAB9, 0xFFBFFF00, 0xFFFFD700
+        };
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(dp(16), dp(16), dp(16), dp(12));
+        root.setBackground(roundRect(0xFF101216, 0xFF30333A, 1, 20));
+        TextView heading = new TextView(this);
+        heading.setText("TEXT STYLE COLLECTION");
+        heading.setTextColor(0xFFFFD66B);
+        heading.setTextSize(17);
+        heading.setTypeface(null, Typeface.BOLD);
+        root.addView(heading);
+        TextView caption = new TextView(this);
+        caption.setText("20 ready-made looks • tap to apply");
+        caption.setTextColor(0xFFB8BBC4);
+        caption.setTextSize(12);
+        caption.setPadding(0, dp(4), 0, dp(12));
+        root.addView(caption);
+        ScrollView scroll = new ScrollView(this);
+        LinearLayout grid = new LinearLayout(this);
+        grid.setOrientation(LinearLayout.VERTICAL);
+        for (int i = 0; i < styles.length; i += 2) {
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            for (int j = i; j < Math.min(i + 2, styles.length); j++) {
+                final int index = j;
+                TextView card = new TextView(this);
+                card.setText("Aa\n" + styles[j]);
+                card.setGravity(Gravity.CENTER);
+                card.setTextSize(13);
+                card.setTypeface(null, Typeface.BOLD);
+                card.setTextColor(colors[j]);
+                card.setPadding(dp(5), dp(12), dp(5), dp(12));
+                card.setBackground(roundRect(0xFF1C1F25, colors[j], 1, 14));
+                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, dp(76), 1f);
+                lp.setMargins(dp(4), dp(4), dp(4), dp(4));
+                row.addView(card, lp);
+                card.setOnClickListener(v -> {
+                    applyTextStyle(layer, index);
+                    ((AlertDialog) root.getTag()).dismiss();
+                });
+            }
+            grid.addView(row);
+        }
+        scroll.addView(grid);
+        root.addView(scroll, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(390)));
+        AlertDialog dialog = new AlertDialog.Builder(this).create();
+        root.setTag(dialog);
+        dialog.setView(root);
+        dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            dialog.getWindow().setLayout((int) (getResources().getDisplayMetrics().widthPixels * 0.94f),
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+        }
     }
 
     private void showMoreTools() {
