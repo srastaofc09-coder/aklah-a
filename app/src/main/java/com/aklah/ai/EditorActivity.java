@@ -1,18 +1,27 @@
 package com.aklah.ai;
 
 import android.content.Intent;
+import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.MotionEvent;
+import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.media3.common.C;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
+import androidx.media3.common.Timeline;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.ui.PlayerView;
 
@@ -33,6 +42,19 @@ public class EditorActivity extends AppCompatActivity {
     private final Deque<List<ClipItem>> undoStack = new ArrayDeque<>();
     private final Deque<List<ClipItem>> redoStack = new ArrayDeque<>();
     private LinearLayout strip;
+
+    private final List<TextLayer> texts = new ArrayList<>();
+    private final List<TextView> textViews = new ArrayList<>();
+    private FrameLayout overlay;
+    private boolean dragging = false;
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private final Runnable tick = new Runnable() {
+        @Override
+        public void run() {
+            updateOverlay();
+            handler.postDelayed(this, 200);
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,13 +77,18 @@ public class EditorActivity extends AppCompatActivity {
                 clips.add(c.copy());
             }
         }
+        for (TextLayer t : project.texts) {
+            texts.add(t.copy());
+        }
 
         ((TextView) findViewById(R.id.tvEditorTitle)).setText(project.name);
         strip = findViewById(R.id.clipStrip);
+        overlay = findViewById(R.id.textOverlay);
 
         LinearLayout r1 = findViewById(R.id.row1);
         LinearLayout r2 = findViewById(R.id.row2);
         LinearLayout r3 = findViewById(R.id.row3);
+        LinearLayout r4 = findViewById(R.id.row4);
         addButton(r1, "Split", () -> splitClip());
         addButton(r1, "Trim Start", () -> trimStart());
         addButton(r1, "Trim End", () -> trimEnd());
@@ -70,8 +97,12 @@ public class EditorActivity extends AppCompatActivity {
         addButton(r2, "Aage >", () -> moveClip(1));
         addButton(r2, "Undo", () -> undo());
         addButton(r2, "Redo", () -> redo());
+        addButton(r4, "+ Text", () -> addText());
+        addButton(r4, "Text Edit", () -> chooseTextToEdit());
         addButton(r3, "Project Save Karein", () -> saveProject(true));
         addButton(r3, "Export MP4", () -> openExport());
+
+        rebuildOverlay();
     }
 
     @Override
@@ -94,11 +125,13 @@ public class EditorActivity extends AppCompatActivity {
             }
         });
         reload(0, 0);
+        handler.post(tick);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
+        handler.removeCallbacks(tick);
         if (project != null) {
             saveProject(false);
         }
@@ -123,6 +156,8 @@ public class EditorActivity extends AppCompatActivity {
     private void toast(String s) {
         Toast.makeText(this, s, Toast.LENGTH_SHORT).show();
     }
+
+    // ---------- Player ----------
 
     private void reload(int index, long posMs) {
         if (player == null || clips.isEmpty()) {
@@ -155,6 +190,27 @@ public class EditorActivity extends AppCompatActivity {
         int i = player.getCurrentMediaItemIndex();
         return (i >= 0 && i < clips.size()) ? i : -1;
     }
+
+    // Poore project ki timeline mein abhi kitne ms par hain
+    private long timelineMs() {
+        if (player == null) {
+            return 0;
+        }
+        long total = 0;
+        Timeline tl = player.getCurrentTimeline();
+        int cur = player.getCurrentMediaItemIndex();
+        Timeline.Window w = new Timeline.Window();
+        for (int i = 0; i < cur && i < tl.getWindowCount(); i++) {
+            tl.getWindow(i, w);
+            long dur = w.getDurationMs();
+            if (dur != C.TIME_UNSET) {
+                total += dur;
+            }
+        }
+        return total + Math.max(0, player.getCurrentPosition());
+    }
+
+    // ---------- Clip edit actions ----------
 
     private void splitClip() {
         int i = currentIndex();
@@ -266,8 +322,178 @@ public class EditorActivity extends AppCompatActivity {
         reload(Math.min(keep, clips.size() - 1), 0);
     }
 
+    // ---------- Text layers ----------
+
+    private void addText() {
+        TextDialog.show(this, null, new TextDialog.Callback() {
+            @Override
+            public void onSave(TextLayer layer) {
+                texts.add(layer);
+                rebuildOverlay();
+                saveProject(false);
+            }
+
+            @Override
+            public void onDelete() {
+            }
+        });
+    }
+
+    private void chooseTextToEdit() {
+        if (texts.isEmpty()) {
+            toast("Pehle + Text se text jodein");
+            return;
+        }
+        String[] items = new String[texts.size()];
+        for (int i = 0; i < texts.size(); i++) {
+            String s = texts.get(i).text.replace('\n', ' ');
+            if (s.length() > 24) {
+                s = s.substring(0, 24) + "...";
+            }
+            items[i] = (i + 1) + ". " + s;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("Kaun sa text?")
+                .setItems(items, (dlg, which) -> editText(texts.get(which)))
+                .show();
+    }
+
+    private void editText(final TextLayer layer) {
+        TextDialog.show(this, layer, new TextDialog.Callback() {
+            @Override
+            public void onSave(TextLayer updated) {
+                int i = texts.indexOf(layer);
+                if (i >= 0) {
+                    texts.set(i, updated);
+                }
+                rebuildOverlay();
+                saveProject(false);
+            }
+
+            @Override
+            public void onDelete() {
+                texts.remove(layer);
+                rebuildOverlay();
+                saveProject(false);
+            }
+        });
+    }
+
+    private void rebuildOverlay() {
+        if (overlay == null) {
+            return;
+        }
+        overlay.removeAllViews();
+        textViews.clear();
+        float d = getResources().getDisplayMetrics().density;
+        int maxW = (int) (getResources().getDisplayMetrics().widthPixels * 0.85f);
+
+        for (final TextLayer l : texts) {
+            final TextView tv = new TextView(this);
+            tv.setText(l.text);
+            tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, l.sizeSp);
+            tv.setTextColor(l.color);
+            tv.setTypeface(null, l.bold ? Typeface.BOLD : Typeface.NORMAL);
+            if (l.bgColor != 0) {
+                tv.setBackgroundColor(l.bgColor);
+            }
+            if (l.shadow) {
+                tv.setShadowLayer(6f, 2f, 2f, 0xFF000000);
+            }
+            tv.setPadding((int) (8 * d), (int) (4 * d), (int) (8 * d), (int) (4 * d));
+            tv.setMaxWidth(maxW);
+            tv.setLayoutDirection(l.rtl
+                    ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LTR);
+            tv.setTextDirection(l.rtl
+                    ? View.TEXT_DIRECTION_RTL : View.TEXT_DIRECTION_LTR);
+            tv.setGravity(l.align == 0 ? Gravity.LEFT
+                    : (l.align == 2 ? Gravity.RIGHT : Gravity.CENTER_HORIZONTAL));
+            tv.setVisibility(View.INVISIBLE);
+            attachTouch(tv, l);
+            overlay.addView(tv, new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT));
+            textViews.add(tv);
+        }
+    }
+
+    private void attachTouch(final TextView tv, final TextLayer l) {
+        final float[] start = new float[4];
+        final boolean[] moved = {false};
+        tv.setOnTouchListener((v, e) -> {
+            switch (e.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    start[0] = e.getRawX();
+                    start[1] = e.getRawY();
+                    start[2] = v.getX();
+                    start[3] = v.getY();
+                    moved[0] = false;
+                    dragging = true;
+                    return true;
+                case MotionEvent.ACTION_MOVE:
+                    float dx = e.getRawX() - start[0];
+                    float dy = e.getRawY() - start[1];
+                    if (Math.abs(dx) > 12 || Math.abs(dy) > 12) {
+                        moved[0] = true;
+                    }
+                    if (moved[0]) {
+                        v.setX(start[2] + dx);
+                        v.setY(start[3] + dy);
+                    }
+                    return true;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    dragging = false;
+                    int w = overlay.getWidth();
+                    int h = overlay.getHeight();
+                    if (moved[0] && w > 0 && h > 0) {
+                        l.xFrac = clamp((v.getX() + v.getWidth() / 2f) / w);
+                        l.yFrac = clamp((v.getY() + v.getHeight() / 2f) / h);
+                        saveProject(false);
+                    } else if (e.getActionMasked() == MotionEvent.ACTION_UP) {
+                        editText(l);
+                    }
+                    return true;
+                default:
+                    return false;
+            }
+        });
+    }
+
+    private float clamp(float f) {
+        return Math.max(0f, Math.min(1f, f));
+    }
+
+    private void updateOverlay() {
+        if (overlay == null) {
+            return;
+        }
+        long t = timelineMs();
+        for (int i = 0; i < texts.size() && i < textViews.size(); i++) {
+            TextLayer l = texts.get(i);
+            TextView tv = textViews.get(i);
+            boolean show = t >= l.startMs && (l.endMs < 0 || t < l.endMs);
+            tv.setVisibility(show ? View.VISIBLE : View.INVISIBLE);
+            if (show && !dragging) {
+                int w = overlay.getWidth();
+                int h = overlay.getHeight();
+                if (w > 0 && h > 0 && tv.getWidth() > 0) {
+                    tv.setX(l.xFrac * w - tv.getWidth() / 2f);
+                    tv.setY(l.yFrac * h - tv.getHeight() / 2f);
+                }
+            }
+        }
+    }
+
+    // ---------- Save / Export ----------
+
     private void saveProject(boolean show) {
         project.clips = snapshot();
+        List<TextLayer> tl = new ArrayList<>();
+        for (TextLayer t : texts) {
+            tl.add(t.copy());
+        }
+        project.texts = tl;
         ProjectStore.save(this, project);
         if (show) {
             toast("Project save ho gaya");
@@ -280,6 +506,8 @@ public class EditorActivity extends AppCompatActivity {
         i.putExtra(EXTRA_PROJECT_ID, project.id);
         startActivity(i);
     }
+
+    // ---------- UI helpers ----------
 
     private String sec(long ms) {
         return String.format(Locale.US, "%.1fs", ms / 1000f);
