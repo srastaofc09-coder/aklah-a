@@ -21,6 +21,7 @@ import androidx.media3.common.C;
 import androidx.media3.common.Effect;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.audio.AudioProcessor;
+import androidx.media3.common.audio.SonicAudioProcessor;
 import androidx.media3.effect.Presentation;
 import androidx.media3.effect.Brightness;
 import androidx.media3.effect.Contrast;
@@ -195,8 +196,15 @@ public class ExportActivity extends AppCompatActivity {
                 video.add(Presentation.createForAspectRatio(16f / 9f, Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP));
             }
             if (height > 0) video.add(Presentation.createForHeight(height));
-            if (!video.isEmpty()) {
-                eb.setEffects(new Effects(Collections.<AudioProcessor>emptyList(), video));
+            List<AudioProcessor> audio = new ArrayList<>();
+            if (Math.abs(c.speed - 1f) > 0.001f) {
+                SonicAudioProcessor sonic = new SonicAudioProcessor();
+                sonic.setSpeed(c.speed);
+                sonic.setPitch(1f);
+                audio.add(sonic);
+            }
+            if (!video.isEmpty() || !audio.isEmpty()) {
+                eb.setEffects(new Effects(audio, video));
             }
             items.add(eb.build());
         }
