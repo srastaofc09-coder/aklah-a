@@ -47,21 +47,24 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showRecent() {
-        List<ProjectItem> all = ProjectStore.loadAll(this);
+        final List<ProjectItem> all = ProjectStore.loadAll(this);
         if (all.isEmpty()) {
             tvRecent.setText("Abhi koi project nahi");
+            tvRecent.setOnClickListener(null);
             return;
         }
-        StringBuilder sb = new StringBuilder();
-        int count = Math.min(all.size(), 5);
-        for (int i = 0; i < count; i++) {
-            ProjectItem p = all.get(i);
-            sb.append(p.name)
-                    .append("  (")
-                    .append(p.mediaUris.size())
-                    .append(" media)\n");
-        }
-        tvRecent.setText(sb.toString());
+        ProjectItem p = all.get(0);
+        tvRecent.setText("Last project kholein:\n" + p.name
+                + "  (" + p.mediaUris.size() + " media)");
+        final String id = p.id;
+        tvRecent.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent i = new Intent(MainActivity.this, EditorActivity.class);
+                i.putExtra(EditorActivity.EXTRA_PROJECT_ID, id);
+                startActivity(i);
+            }
+        });
     }
 
     private void bind(int viewId, final String name) {
