@@ -55,6 +55,15 @@ public class ProjectStore {
                         clip.redScale = (float) c.optDouble("redScale", 1.0);
                         clip.greenScale = (float) c.optDouble("greenScale", 1.0);
                         clip.blueScale = (float) c.optDouble("blueScale", 1.0);
+                        clip.transitionType = c.optInt("transitionType", 0);
+                        clip.transitionDurationMs = c.optLong("transitionDurationMs", 500L);
+                        clip.maskEnabled = c.optBoolean("maskEnabled", false); clip.maskMode = c.optInt("maskMode", 0);
+                        clip.maskX = (float)c.optDouble("maskX",0.25); clip.maskY = (float)c.optDouble("maskY",0.25);
+                        clip.maskWidth = (float)c.optDouble("maskWidth",0.5); clip.maskHeight = (float)c.optDouble("maskHeight",0.5);
+                        clip.keyStartScale = (float)c.optDouble("keyStartScale",1.0); clip.keyEndScale = (float)c.optDouble("keyEndScale",1.0);
+                        clip.keyStartX = (float)c.optDouble("keyStartX",0.5); clip.keyStartY = (float)c.optDouble("keyStartY",0.5);
+                        clip.keyEndX = (float)c.optDouble("keyEndX",0.5); clip.keyEndY = (float)c.optDouble("keyEndY",0.5);
+                        clip.keyStartMs = c.optLong("keyStartMs",0L); clip.keyEndMs = c.optLong("keyEndMs",1000L);
                         p.clips.add(clip);
                     }
                 }
@@ -138,6 +147,12 @@ public class ProjectStore {
                     co.put("redScale", c.redScale);
                     co.put("greenScale", c.greenScale);
                     co.put("blueScale", c.blueScale);
+                    co.put("transitionType", c.transitionType); co.put("transitionDurationMs", c.transitionDurationMs);
+                    co.put("maskEnabled", c.maskEnabled); co.put("maskMode", c.maskMode);
+                    co.put("maskX", c.maskX); co.put("maskY", c.maskY); co.put("maskWidth", c.maskWidth); co.put("maskHeight", c.maskHeight);
+                    co.put("keyStartScale", c.keyStartScale); co.put("keyEndScale", c.keyEndScale);
+                    co.put("keyStartX", c.keyStartX); co.put("keyStartY", c.keyStartY); co.put("keyEndX", c.keyEndX); co.put("keyEndY", c.keyEndY);
+                    co.put("keyStartMs", c.keyStartMs); co.put("keyEndMs", c.keyEndMs);
                     clips.put(co);
                 }
                 o.put("clips", clips);
