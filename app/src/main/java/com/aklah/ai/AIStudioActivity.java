@@ -168,9 +168,10 @@ public class AIStudioActivity extends AppCompatActivity {
             final Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
             if (bitmap == null) throw new Exception("Generated image decode nahi hui");
             final Uri saved = saveImageBytes(bytes, inlineMime(response));
+            final String noteText = note;
             main.post(() -> {
                 image.setImageBitmap(bitmap);
-                result.setText(note + (saved == null ? "Image generated." : "Image Gallery/Photos mein save ho gayi."));
+                result.setText(noteText + (saved == null ? "Image generated." : "Image Gallery/Photos mein save ho gayi."));
             });
         });
     }
