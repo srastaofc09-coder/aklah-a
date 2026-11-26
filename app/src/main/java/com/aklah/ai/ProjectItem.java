@@ -9,6 +9,7 @@ public class ProjectItem {
     public String name;
     public long createdAt;
     public List<String> mediaUris = new ArrayList<>();
+    public List<ClipItem> clips = new ArrayList<>();
 
     public ProjectItem(String id, String name, long createdAt) {
         this.id = id;
