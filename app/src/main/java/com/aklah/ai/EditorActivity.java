@@ -765,17 +765,17 @@ public class EditorActivity extends AppCompatActivity {
                 .setItems(tools, (d, which) -> {
                     ClipItem clip = selectedClip();
                     if (clip == null) return;
-                    pushUndo();
                     switch (which) {
-                        case 0: clip.rotationDegrees = (clip.rotationDegrees + 90) % 360; break;
-                        case 1: clip.rotationDegrees = (clip.rotationDegrees + 180) % 360; break;
-                        case 2: clip.rotationDegrees = (clip.rotationDegrees + 270) % 360; break;
-                        case 3: clip.rotationDegrees = 0; break;
+                        case 0: pushUndo(); clip.rotationDegrees = (clip.rotationDegrees + 90) % 360; break;
+                        case 1: pushUndo(); clip.rotationDegrees = (clip.rotationDegrees + 180) % 360; break;
+                        case 2: pushUndo(); clip.rotationDegrees = (clip.rotationDegrees + 270) % 360; break;
+                        case 3: pushUndo(); clip.rotationDegrees = 0; break;
                         case 4: chooseCropMode(clip); return;
                         case 5: chooseClipSpeed(clip); return;
                         case 6: showColorAdjustments(clip); return;
                         case 7: chooseFilterPreset(clip); return;
                         case 8:
+                            pushUndo();
                             clip.rotationDegrees = 0;
                             clip.cropMode = 0;
                             clip.speed = 1f;
