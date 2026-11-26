@@ -46,6 +46,12 @@ public class ProjectStore {
                         clip.brightness = (float) c.optDouble("brightness", 0.0);
                         clip.contrast = (float) c.optDouble("contrast", 1.0);
                         clip.saturation = (float) c.optDouble("saturation", 1.0);
+                        clip.flipX = c.optBoolean("flipX", false);
+                        clip.flipY = c.optBoolean("flipY", false);
+                        clip.blurSigma = (float) c.optDouble("blurSigma", 0.0);
+                        clip.redScale = (float) c.optDouble("redScale", 1.0);
+                        clip.greenScale = (float) c.optDouble("greenScale", 1.0);
+                        clip.blueScale = (float) c.optDouble("blueScale", 1.0);
                         p.clips.add(clip);
                     }
                 }
@@ -118,6 +124,12 @@ public class ProjectStore {
                     co.put("brightness", c.brightness);
                     co.put("contrast", c.contrast);
                     co.put("saturation", c.saturation);
+                    co.put("flipX", c.flipX);
+                    co.put("flipY", c.flipY);
+                    co.put("blurSigma", c.blurSigma);
+                    co.put("redScale", c.redScale);
+                    co.put("greenScale", c.greenScale);
+                    co.put("blueScale", c.blueScale);
                     clips.put(co);
                 }
                 o.put("clips", clips);
