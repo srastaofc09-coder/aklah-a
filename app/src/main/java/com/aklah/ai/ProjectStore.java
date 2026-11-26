@@ -1,7 +1,6 @@
 package com.aklah.ai;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -16,8 +15,8 @@ public class ProjectStore {
 
     public static List<ProjectItem> loadAll(Context context) {
         List<ProjectItem> list = new ArrayList<>();
-        SharedPreferences sp = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
-        String json = sp.getString(KEY, "[]");
+        String json = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .getString(KEY, "[]");
         try {
             JSONArray arr = new JSONArray(json);
             for (int i = 0; i < arr.length(); i++) {
@@ -30,6 +29,16 @@ public class ProjectStore {
                 if (media != null) {
                     for (int j = 0; j < media.length(); j++) {
                         p.mediaUris.add(media.getString(j));
+                    }
+                }
+                JSONArray clips = o.optJSONArray("clips");
+                if (clips != null) {
+                    for (int j = 0; j < clips.length(); j++) {
+                        JSONObject c = clips.getJSONObject(j);
+                        p.clips.add(new ClipItem(
+                                c.getString("uri"),
+                                c.getLong("start"),
+                                c.getLong("end")));
                     }
                 }
                 list.add(p);
@@ -69,6 +78,15 @@ public class ProjectStore {
                     media.put(u);
                 }
                 o.put("media", media);
+                JSONArray clips = new JSONArray();
+                for (ClipItem c : p.clips) {
+                    JSONObject co = new JSONObject();
+                    co.put("uri", c.uri);
+                    co.put("start", c.startMs);
+                    co.put("end", c.endMs);
+                    clips.put(co);
+                }
+                o.put("clips", clips);
                 arr.put(o);
             }
             context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
