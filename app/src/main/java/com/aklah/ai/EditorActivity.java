@@ -104,6 +104,8 @@ public class EditorActivity extends AppCompatActivity {
         LinearLayout r5 = findViewById(R.id.row5);
         addButton(r5, "Duplicate Clip", () -> duplicateClip());
         addButton(r5, "Mute / Unmute", () -> toggleClipMute());
+        LinearLayout r6 = findViewById(R.id.row6);
+        addButton(r6, "Text Style", () -> chooseTextForPreset());
         addButton(r3, "Project Save Karein", () -> saveProject(true));
         addButton(r3, "Export MP4", () -> openExport());
 
@@ -424,6 +426,56 @@ public class EditorActivity extends AppCompatActivity {
         new AlertDialog.Builder(this)
                 .setTitle("Kaun sa text?")
                 .setItems(items, (dlg, which) -> editText(texts.get(which)))
+                .show();
+    }
+
+    private void chooseTextForPreset() {
+        if (texts.isEmpty()) {
+            toast("Pehle + Text se text jodein");
+            return;
+        }
+        String[] items = new String[texts.size()];
+        for (int i = 0; i < texts.size(); i++) {
+            String s = texts.get(i).text.replace('\\n', ' ');
+            if (s.length() > 24) {
+                s = s.substring(0, 24) + "...";
+            }
+            items[i] = (i + 1) + ". " + s;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("Kis text ka style badlein?")
+                .setItems(items, (dlg, which) -> showTextStylePresets(texts.get(which)))
+                .show();
+    }
+
+    private void showTextStylePresets(final TextLayer layer) {
+        String[] styles = {"Gold Islamic", "White Caption", "Green Arabic"};
+        new AlertDialog.Builder(this)
+                .setTitle("Text Style Preset")
+                .setItems(styles, (dlg, which) -> {
+                    if (which == 0) {
+                        layer.color = 0xFFFFD700;
+                        layer.bgColor = 0x66000000;
+                        layer.sizeSp = 30;
+                        layer.bold = true;
+                        layer.shadow = true;
+                    } else if (which == 1) {
+                        layer.color = 0xFFFFFFFF;
+                        layer.bgColor = 0x99000000;
+                        layer.sizeSp = 24;
+                        layer.bold = false;
+                        layer.shadow = true;
+                    } else {
+                        layer.color = 0xFF7CFC00;
+                        layer.bgColor = 0x66000000;
+                        layer.sizeSp = 32;
+                        layer.bold = true;
+                        layer.shadow = true;
+                    }
+                    rebuildOverlay();
+                    saveProject(false);
+                    toast("Text style apply ho gaya");
+                })
                 .show();
     }
 
