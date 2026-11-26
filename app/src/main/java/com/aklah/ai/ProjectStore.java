@@ -35,10 +35,12 @@ public class ProjectStore {
                 if (clips != null) {
                     for (int j = 0; j < clips.length(); j++) {
                         JSONObject c = clips.getJSONObject(j);
-                        p.clips.add(new ClipItem(
+                        ClipItem clip = new ClipItem(
                                 c.getString("uri"),
                                 c.getLong("start"),
-                                c.getLong("end")));
+                                c.getLong("end"));
+                        clip.muted = c.optBoolean("muted", false);
+                        p.clips.add(clip);
                     }
                 }
                 JSONArray texts = o.optJSONArray("texts");
@@ -103,6 +105,7 @@ public class ProjectStore {
                     co.put("uri", c.uri);
                     co.put("start", c.startMs);
                     co.put("end", c.endMs);
+                    co.put("muted", c.muted);
                     clips.put(co);
                 }
                 o.put("clips", clips);
