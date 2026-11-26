@@ -40,6 +40,12 @@ public class ProjectStore {
                                 c.getLong("start"),
                                 c.getLong("end"));
                         clip.muted = c.optBoolean("muted", false);
+                        clip.rotationDegrees = c.optInt("rotation", 0);
+                        clip.cropMode = c.optInt("crop", 0);
+                        clip.speed = (float) c.optDouble("speed", 1.0);
+                        clip.brightness = (float) c.optDouble("brightness", 0.0);
+                        clip.contrast = (float) c.optDouble("contrast", 1.0);
+                        clip.saturation = (float) c.optDouble("saturation", 1.0);
                         p.clips.add(clip);
                     }
                 }
@@ -106,6 +112,12 @@ public class ProjectStore {
                     co.put("start", c.startMs);
                     co.put("end", c.endMs);
                     co.put("muted", c.muted);
+                    co.put("rotation", c.rotationDegrees);
+                    co.put("crop", c.cropMode);
+                    co.put("speed", c.speed);
+                    co.put("brightness", c.brightness);
+                    co.put("contrast", c.contrast);
+                    co.put("saturation", c.saturation);
                     clips.put(co);
                 }
                 o.put("clips", clips);
