@@ -2,6 +2,7 @@ package com.aklah.ai;
 
 import android.content.ContentValues;
 import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.content.Intent;
@@ -31,6 +32,7 @@ import androidx.media3.effect.Brightness;
 import androidx.media3.effect.Contrast;
 import androidx.media3.effect.CanvasOverlay;
 import androidx.media3.effect.OverlayEffect;
+import androidx.media3.effect.MatrixTransformation;
 import androidx.media3.effect.TextureOverlay;
 import androidx.media3.effect.HslAdjustment;
 import androidx.media3.effect.GaussianBlur;
@@ -195,6 +197,38 @@ public class ExportActivity extends AppCompatActivity {
                         .build());
             }
             if (Math.abs(c.speed - 1f) > 0.001f) video.add(new SpeedChangeEffect(c.speed));
+            // Animate scale and normalized position across the clip's keyframe interval.
+            boolean hasKeyframes = Math.abs(c.keyStartScale - c.keyEndScale) > 0.001f
+                    || Math.abs(c.keyStartX - c.keyEndX) > 0.001f
+                    || Math.abs(c.keyStartY - c.keyEndY) > 0.001f
+                    || Math.abs(c.keyStartScale - 1f) > 0.001f
+                    || Math.abs(c.keyEndScale - 1f) > 0.001f
+                    || Math.abs(c.keyStartX - 0.5f) > 0.001f
+                    || Math.abs(c.keyStartY - 0.5f) > 0.001f
+                    || Math.abs(c.keyEndX - 0.5f) > 0.001f
+                    || Math.abs(c.keyEndY - 0.5f) > 0.001f;
+            if (hasKeyframes) {
+                video.add(new MatrixTransformation() {
+                    @Override
+                    public Matrix getMatrix(long presentationTimeUs) {
+                        long timeMs = Math.max(0L, presentationTimeUs / 1000L);
+                        long startMs = Math.max(0L, c.keyStartMs);
+                        long endMs = Math.max(startMs + 1L, c.keyEndMs);
+                        float progress = Math.max(0f, Math.min(1f,
+                                (timeMs - startMs) / (float) (endMs - startMs)));
+                        float scale = c.keyStartScale
+                                + (c.keyEndScale - c.keyStartScale) * progress;
+                        float x = c.keyStartX + (c.keyEndX - c.keyStartX) * progress;
+                        float y = c.keyStartY + (c.keyEndY - c.keyStartY) * progress;
+                        Matrix matrix = new Matrix();
+                        matrix.setScale(Math.max(0.25f, Math.min(4f, scale)),
+                                Math.max(0.25f, Math.min(4f, scale)));
+                        matrix.postTranslate((x - 0.5f) * 2f, (0.5f - y) * 2f);
+                        return matrix;
+                    }
+                });
+            }
+
             if (Math.abs(c.brightness) > 0.001f) video.add(new Brightness(c.brightness));
             if (Math.abs(c.contrast - 1f) > 0.001f) video.add(new Contrast(c.contrast));
             if (Math.abs(c.saturation - 1f) > 0.001f) {
