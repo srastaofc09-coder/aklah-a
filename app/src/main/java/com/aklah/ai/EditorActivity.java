@@ -903,20 +903,52 @@ public class EditorActivity extends AppCompatActivity {
                                     toast(selected == 0 ? "Transition removed" : "Transition saved; export renders boundary fade/wipe (crossfade uses black-fade approximation).");
                                 }).setNegativeButton("Cancel", null).show();
                     } else if (which == 1) {
-                        LinearLayout box = new LinearLayout(this); box.setOrientation(LinearLayout.VERTICAL);
-                        android.widget.EditText start = new android.widget.EditText(this); start.setHint("Start scale (1.0)");
-                        android.widget.EditText end = new android.widget.EditText(this); end.setHint("End scale (1.25)");
+                        LinearLayout box = new LinearLayout(this);
+                        box.setOrientation(LinearLayout.VERTICAL);
+                        android.widget.EditText start = new android.widget.EditText(this);
+                        android.widget.EditText end = new android.widget.EditText(this);
+                        android.widget.EditText startX = new android.widget.EditText(this);
+                        android.widget.EditText startY = new android.widget.EditText(this);
+                        android.widget.EditText endX = new android.widget.EditText(this);
+                        android.widget.EditText endY = new android.widget.EditText(this);
+                        start.setHint("Start scale (1.0)"); end.setHint("End scale (1.25)");
+                        startX.setHint("Start X (0.5)"); startY.setHint("Start Y (0.5)");
+                        endX.setHint("End X (0.5)"); endY.setHint("End Y (0.5)");
                         start.setInputType(8194); end.setInputType(8194);
-                        start.setText(String.valueOf(c.keyStartScale)); end.setText(String.valueOf(c.keyEndScale));
+                        startX.setInputType(8194); startY.setInputType(8194);
+                        endX.setInputType(8194); endY.setInputType(8194);
+                        start.setText(String.valueOf(c.keyStartScale));
+                        end.setText(String.valueOf(c.keyEndScale));
+                        startX.setText(String.valueOf(c.keyStartX));
+                        startY.setText(String.valueOf(c.keyStartY));
+                        endX.setText(String.valueOf(c.keyEndX));
+                        endY.setText(String.valueOf(c.keyEndY));
                         box.addView(start); box.addView(end);
-                        new AlertDialog.Builder(this).setTitle("Start / End Keyframe Scale").setView(box)
+                        box.addView(startX); box.addView(startY);
+                        box.addView(endX); box.addView(endY);
+                        new AlertDialog.Builder(this).setTitle("Keyframe Scale & Position").setView(box)
                                 .setPositiveButton("Save", (d, w) -> {
                                     try {
-                                        pushUndo(); c.keyStartScale = Math.max(0.25f, Math.min(4f, Float.parseFloat(start.getText().toString())));
-                                        c.keyEndScale = Math.max(0.25f, Math.min(4f, Float.parseFloat(end.getText().toString())));
-                                        c.keyStartMs = 0L; c.keyEndMs = Math.max(1000L, clipDurationMs(c));
-                                        saveProject(false); refreshStrip(); toast("Keyframes saved; scale/position animation is applied during export.");
-                                    } catch (Exception ex) { toast("Scale value sahi enter karein"); }
+                                        float s0 = Float.parseFloat(start.getText().toString());
+                                        float s1 = Float.parseFloat(end.getText().toString());
+                                        float x0 = Float.parseFloat(startX.getText().toString());
+                                        float y0 = Float.parseFloat(startY.getText().toString());
+                                        float x1 = Float.parseFloat(endX.getText().toString());
+                                        float y1 = Float.parseFloat(endY.getText().toString());
+                                        pushUndo();
+                                        c.keyStartScale = Math.max(0.25f, Math.min(4f, s0));
+                                        c.keyEndScale = Math.max(0.25f, Math.min(4f, s1));
+                                        c.keyStartX = Math.max(0f, Math.min(1f, x0));
+                                        c.keyStartY = Math.max(0f, Math.min(1f, y0));
+                                        c.keyEndX = Math.max(0f, Math.min(1f, x1));
+                                        c.keyEndY = Math.max(0f, Math.min(1f, y1));
+                                        c.keyStartMs = 0L;
+                                        c.keyEndMs = Math.max(1000L, clipDurationMs(c));
+                                        saveProject(false); refreshStrip();
+                                        toast("Keyframe scale/position saved and applied in export.");
+                                    } catch (Exception ex) {
+                                        toast("Scale 0.25-4 aur X/Y 0-1 values enter karein");
+                                    }
                                 }).setNegativeButton("Cancel", null).show();
                     } else if (which == 2) {
                         final String[] modes = {"Disable mask", "Rectangle cover", "Circle cover", "Blur region (solid privacy cover in export)"};
