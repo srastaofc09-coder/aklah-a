@@ -436,7 +436,7 @@ public class EditorActivity extends AppCompatActivity {
         }
         String[] items = new String[texts.size()];
         for (int i = 0; i < texts.size(); i++) {
-            String s = texts.get(i).text.replace('\\n', ' ');
+            String s = texts.get(i).text.replace('\n', ' ');
             if (s.length() > 24) {
                 s = s.substring(0, 24) + "...";
             }
