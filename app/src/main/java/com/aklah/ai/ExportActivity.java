@@ -452,11 +452,13 @@ public class ExportActivity extends AppCompatActivity {
                 video.add(new OverlayEffect(ImmutableList.of(transitionOverlay)));
             }
 
-            if (c.cropMode == 1) {
+            int effectiveCanvasMode = project.canvasMode != 0
+                    ? project.canvasMode : c.cropMode;
+            if (effectiveCanvasMode == 1) {
                 video.add(Presentation.createForAspectRatio(9f / 16f, Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP));
-            } else if (c.cropMode == 2) {
+            } else if (effectiveCanvasMode == 2) {
                 video.add(Presentation.createForAspectRatio(1f, Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP));
-            } else if (c.cropMode == 3) {
+            } else if (effectiveCanvasMode == 3) {
                 video.add(Presentation.createForAspectRatio(16f / 9f, Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP));
             }
             if (height > 0) video.add(Presentation.createForHeight(height));

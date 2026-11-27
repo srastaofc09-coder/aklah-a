@@ -55,6 +55,7 @@ public class EditorActivity extends AppCompatActivity {
         final List<ClipItem> clips = new ArrayList<>();
         final List<TextLayer> texts = new ArrayList<>();
         final List<AudioTrackItem> audioTracks = new ArrayList<>();
+        int canvasMode;
     }
     private final Deque<EditorSnapshot> undoStack = new ArrayDeque<>();
     private final Deque<EditorSnapshot> redoStack = new ArrayDeque<>();
@@ -183,6 +184,7 @@ public class EditorActivity extends AppCompatActivity {
         addButton(r6, "Blur / Fill", () -> { ClipItem c = selectedClip(); if (c != null) chooseBlur(c); });
         addButton(r6, "Mask", () -> { ClipItem c = selectedClip(); if (c != null) editMaskBounds(c); });
         LinearLayout r7 = findViewById(R.id.row7);
+        addButton(r7, "Canvas Ratio", () -> chooseCanvasRatio());
         addButton(r7, "Creator Studio", () -> showStudioTools());
         addButton(r7, "Subtitle", () -> addSubtitleAtPlayhead());
         addButton(r7, "Audio Tracks", () -> manageAudioTracks());
@@ -216,6 +218,8 @@ public class EditorActivity extends AppCompatActivity {
             }
         });
         reload(0, 0);
+        View previewStage = findViewById(R.id.previewStage);
+        if (previewStage != null) previewStage.post(() -> applyPreviewCanvas());
         handler.post(tick);
     }
 
@@ -452,6 +456,7 @@ public class EditorActivity extends AppCompatActivity {
 
     private EditorSnapshot captureEditorSnapshot() {
         EditorSnapshot state = new EditorSnapshot();
+        state.canvasMode = project != null ? project.canvasMode : 0;
         for (ClipItem clip : clips) state.clips.add(clip.copy());
         for (TextLayer layer : texts) state.texts.add(layer.copy());
         if (project != null && project.audioTracks != null) {
@@ -468,6 +473,7 @@ public class EditorActivity extends AppCompatActivity {
         texts.clear();
         for (TextLayer layer : state.texts) texts.add(layer.copy());
         if (project != null) {
+            project.canvasMode = state.canvasMode;
             project.audioTracks.clear();
             for (AudioTrackItem track : state.audioTracks) project.audioTracks.add(track.copy());
         }
@@ -1359,6 +1365,57 @@ public class EditorActivity extends AppCompatActivity {
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
+    }
+
+    private void chooseCanvasRatio() {
+        final String[] options = {"Original / Auto", "Portrait 9:16", "Square 1:1", "Landscape 16:9"};
+        new AlertDialog.Builder(this)
+                .setTitle("PROJECT CANVAS RATIO")
+                .setSingleChoiceItems(options, Math.max(0, Math.min(3, project.canvasMode)), (dialog, which) -> {
+                    pushUndo();
+                    project.canvasMode = which;
+                    saveProject(false);
+                    applyPreviewCanvas();
+                    dialog.dismiss();
+                    toast("Project canvas ratio updated; export mein bhi apply hoga.");
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private float canvasAspectRatio() {
+        if (project == null) return 0f;
+        if (project.canvasMode == 1) return 9f / 16f;
+        if (project.canvasMode == 2) return 1f;
+        if (project.canvasMode == 3) return 16f / 9f;
+        return 0f;
+    }
+
+    private void applyPreviewCanvas() {
+        View stage = findViewById(R.id.previewStage);
+        View video = findViewById(R.id.playerView);
+        View textLayer = findViewById(R.id.textOverlay);
+        if (stage == null || video == null || textLayer == null) return;
+        int stageW = stage.getWidth();
+        int stageH = stage.getHeight();
+        if (stageW <= 0 || stageH <= 0) {
+            stage.post(() -> applyPreviewCanvas());
+            return;
+        }
+        float ratio = canvasAspectRatio();
+        int w = stageW;
+        int h = stageH;
+        if (ratio > 0f) {
+            if (stageW / (float) stageH > ratio) {
+                h = stageH;
+                w = Math.max(1, Math.round(h * ratio));
+            } else {
+                w = stageW;
+                h = Math.max(1, Math.round(w / ratio));
+            }
+        }
+        video.setLayoutParams(new FrameLayout.LayoutParams(w, h, Gravity.CENTER));
+        textLayer.setLayoutParams(new FrameLayout.LayoutParams(w, h, Gravity.CENTER));
     }
 
     private void chooseCropMode(ClipItem clip) {

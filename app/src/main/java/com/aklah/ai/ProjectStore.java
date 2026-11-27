@@ -25,6 +25,7 @@ public class ProjectStore {
                         o.getString("id"),
                         o.getString("name"),
                         o.getLong("createdAt"));
+                p.canvasMode = o.optInt("canvasMode", 0);
                 JSONArray media = o.optJSONArray("media");
                 if (media != null) {
                     for (int j = 0; j < media.length(); j++) {
@@ -141,6 +142,7 @@ public class ProjectStore {
                 o.put("id", p.id);
                 o.put("name", p.name);
                 o.put("createdAt", p.createdAt);
+                o.put("canvasMode", p.canvasMode);
                 JSONArray media = new JSONArray();
                 for (String u : p.mediaUris) {
                     media.put(u);

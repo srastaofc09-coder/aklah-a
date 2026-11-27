@@ -8,6 +8,7 @@ public class ProjectItem {
     public String id;
     public String name;
     public long createdAt;
+    public int canvasMode = 0; // 0 original, 1 vertical 9:16, 2 square, 3 landscape 16:9
     public List<String> mediaUris = new ArrayList<>();
     public List<ClipItem> clips = new ArrayList<>();
     public List<TextLayer> texts = new ArrayList<>();
