@@ -364,6 +364,39 @@ public class ExportActivity extends AppCompatActivity {
                         maskCanvas.drawCircle(cx, cy, radius, pattern);
                     }
                     maskCanvas.restore();
+                } else if (c.maskMode == 5) {
+                    maskPaint.setColor(Color.BLACK);
+                    float radius = Math.min(right - left, bottom - top) * 0.16f;
+                    maskCanvas.drawRoundRect(left, top, right, bottom, radius, radius, maskPaint);
+                } else if (c.maskMode == 6) {
+                    maskPaint.setColor(Color.WHITE);
+                    maskCanvas.drawRect(left, top, right, bottom, maskPaint);
+                } else if (c.maskMode == 7) {
+                    // Opaque neon mosaic privacy cover with a bright outline.
+                    maskCanvas.save();
+                    float radius = Math.min(right - left, bottom - top) * 0.12f;
+                    android.graphics.Path rounded = new android.graphics.Path();
+                    rounded.addRoundRect(left, top, right, bottom, radius, radius, android.graphics.Path.Direction.CW);
+                    maskCanvas.clipPath(rounded);
+                    maskPaint.setColor(0xFF100B24);
+                    maskCanvas.drawRect(left, top, right, bottom, maskPaint);
+                    Paint tiles = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    int[] neon = {0xFFFC3A8C, 0xFF7C3AED, 0xFF22D3EE, 0xFFFFD166};
+                    float cell = Math.max(28f, Math.min(right-left, bottom-top) / 7f);
+                    for (int row = 0; row < 32; row++) for (int col = 0; col < 32; col++) {
+                        float cx = left + col * cell + cell / 2f;
+                        float cy = top + row * cell + cell / 2f;
+                        if (cx > right || cy > bottom) continue;
+                        tiles.setColor(neon[Math.floorMod(row * 5 + col * 3, neon.length)]);
+                        float size = cell * (0.30f + ((row + col) & 1) * 0.12f);
+                        maskCanvas.drawRoundRect(cx-size, cy-size, cx+size, cy+size, size*0.25f, size*0.25f, tiles);
+                    }
+                    Paint border = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    border.setStyle(Paint.Style.STROKE);
+                    border.setStrokeWidth(Math.max(8f, cell * 0.12f));
+                    border.setColor(0xFFFF3B9D);
+                    maskCanvas.drawRoundRect(left, top, right, bottom, radius, radius, border);
+                    maskCanvas.restore();
                 } else if (c.maskMode == 4) {
                     // Creator silhouette cutout with layered red glow rings.
                     float cx = (left + right) / 2f;

@@ -1191,7 +1191,7 @@ public class EditorActivity extends AppCompatActivity {
                                     }
                                 }).setNegativeButton("Cancel", null).show();
                     } else if (which == 2) {
-                        final String[] modes = {"Disable mask", "Rectangle cover", "Circle cover", "Black privacy cover", "Satisfying Pattern Cover (offline)", "Silhouette + Red Glow Backdrop"};
+                        final String[] modes = {"Disable mask", "Rectangle cover", "Circle cover", "Black privacy cover", "Satisfying Pattern Cover (offline)", "Silhouette + Red Glow Backdrop", "Rounded Rectangle Cover", "White Privacy Cover", "Neon Mosaic Privacy Cover"};
                         new AlertDialog.Builder(this).setTitle("Manual Mask Mode").setItems(modes, (d, mode) -> {
                             pushUndo();
                             c.maskEnabled = mode != 0;
