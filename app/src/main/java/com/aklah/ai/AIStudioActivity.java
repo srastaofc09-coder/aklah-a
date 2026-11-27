@@ -102,7 +102,7 @@ public class AIStudioActivity extends AppCompatActivity {
         videoBtn.setOnClickListener(v -> toast("Groq text API video generate nahi karti. Video generation ke liye separate video provider chahiye."));
         body.addView(videoBtn);
         Button saveVideo = button("Save Generated Video");
-        saveVideo.setOnClickListener(v -> saveVideo());
+        saveVideo.setOnClickListener(v -> toast("Abhi Groq text AI connected hai; video generation provider alag se add karna hoga."));
         body.addView(saveVideo);
         progress = new ProgressBar(this);
         progress.setVisibility(View.GONE);
