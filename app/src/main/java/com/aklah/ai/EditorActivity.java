@@ -54,7 +54,7 @@ public class EditorActivity extends AppCompatActivity {
 
     private final List<TextLayer> texts = new ArrayList<>();
     private final List<TextView> textViews = new ArrayList<>();
-    private ActivityResultLauncher<String> brollPicker;
+    private ActivityResultLauncher<String[]> brollPicker;
     private FrameLayout overlay;
     private boolean dragging = false;
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -71,7 +71,7 @@ public class EditorActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_editor);
 
-        brollPicker = registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
+        brollPicker = registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
             if (uri == null || project == null) return;
             try { getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION); } catch (Exception ignored) { }
             int at = Math.max(0, currentIndex() + 1);
@@ -596,7 +596,7 @@ public class EditorActivity extends AppCompatActivity {
                     switch (which) {
                         case 0: applySilhouetteGlowPreset(); break;
                         case 1: addStyledOverlay("YOUR KEYWORD", 30, 0xFFFFD21F, 0xAA111111, 0.5f, 0.72f, 0); break;
-                        case 2: brollPicker.launch("video/*"); break;
+                        case 2: brollPicker.launch(new String[]{"video/*"}); break;
                         case 3: addStyledOverlay("💬  Your message here", 22, 0xFFFFFFFF, 0xDD17191F, 0.5f, 0.68f, 1); break;
                         case 4: addStyledOverlay("@yourhandle", 17, 0xCCFFFFFF, 0x44000000, 0.82f, 0.94f, 2); break;
                         case 5: addSubtitleAtPlayhead(); break;
@@ -1003,7 +1003,7 @@ public class EditorActivity extends AppCompatActivity {
                                     }
                                 }).setNegativeButton("Cancel", null).show();
                     } else if (which == 2) {
-                        final String[] modes = {"Disable mask", "Rectangle cover", "Circle cover", "Black privacy cover", "Satisfying Pattern Cover (offline)"};
+                        final String[] modes = {"Disable mask", "Rectangle cover", "Circle cover", "Black privacy cover", "Satisfying Pattern Cover (offline)", "Silhouette + Red Glow Backdrop"};
                         new AlertDialog.Builder(this).setTitle("Manual Mask Mode").setItems(modes, (d, mode) -> {
                             pushUndo();
                             c.maskEnabled = mode != 0;
