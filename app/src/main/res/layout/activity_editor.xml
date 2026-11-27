@@ -135,6 +135,21 @@
         android:textStyle="bold"/>
 
     <HorizontalScrollView
+        android:id="@+id/timelineRulerScroll"
+        android:layout_width="match_parent"
+        android:layout_height="25dp"
+        android:fillViewport="false"
+        android:scrollbars="none"
+        android:paddingHorizontal="8dp">
+        <LinearLayout
+            android:id="@+id/timelineRuler"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"/>
+    </HorizontalScrollView>
+
+    <HorizontalScrollView
         android:layout_width="match_parent"
         android:layout_height="64dp"
         android:fillViewport="false"

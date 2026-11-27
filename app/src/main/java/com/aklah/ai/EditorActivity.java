@@ -2194,11 +2194,37 @@ public class EditorActivity extends AppCompatActivity {
         refreshStrip();
     }
 
+    private void renderTimelineRuler() {
+        LinearLayout ruler = findViewById(R.id.timelineRuler);
+        if (ruler == null) return;
+        ruler.removeAllViews();
+        long total = totalTimelineDurationMs();
+        if (total <= 0L || total == C.TIME_UNSET) {
+            total = 0L;
+            for (ClipItem clip : clips) total += clipDurationMs(clip);
+        }
+        float pixelsPerSecond = 32f * timelineZoom;
+        long totalSeconds = Math.max(1L, (total + 999L) / 1000L);
+        long step = totalSeconds <= 30 ? 5 : totalSeconds <= 120 ? 10 : 30;
+        for (long sec = 0; sec <= totalSeconds; sec += step) {
+            TextView tick = new TextView(this);
+            tick.setText(clock(sec * 1000L) + "  │");
+            tick.setTextColor(0xFF9299A8);
+            tick.setTextSize(10);
+            tick.setGravity(Gravity.CENTER_VERTICAL | Gravity.LEFT);
+            int width = Math.max(dp(48), (int) (step * pixelsPerSecond));
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(width, dp(23));
+            tick.setLayoutParams(lp);
+            ruler.addView(tick);
+        }
+    }
+
     private void refreshStrip() {
         if (strip == null) {
             return;
         }
         strip.removeAllViews();
+        renderTimelineRuler();
         renderTimelineLayerLanes();
         int cur = player == null ? 0 : player.getCurrentMediaItemIndex();
         float d = getResources().getDisplayMetrics().density;
