@@ -14,6 +14,31 @@ export default {
     if (url.pathname === "/health" && request.method === "GET") {
       return json({ ok: true, service: "AKLAH AI Fable proxy", configured: Boolean(env.FABLE_API_KEY) });
     }
+    if (url.pathname === "/api/text" && request.method === "POST") {
+      if (!env.GROQ_API_KEY) return json({ error: "GROQ_API_KEY server secret is not configured" }, 503);
+      let body;
+      try { body = await request.json(); } catch { return json({ error: "Invalid JSON body" }, 400); }
+      const upstream = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { "Authorization": "Bearer " + env.GROQ_API_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      return new Response(await upstream.text(), { status: upstream.status, headers: { ...cors, "Content-Type": "application/json; charset=utf-8" } });
+    }
+
+    if (url.pathname === "/api/image" && request.method === "GET") {
+      if (!env.POLLINATIONS_API_KEY) return json({ error: "POLLINATIONS_API_KEY server secret is not configured" }, 503);
+      const prompt = (url.searchParams.get("prompt") || "").trim();
+      if (!prompt || prompt.length > 4000) return json({ error: "Prompt must be 1–4000 characters" }, 400);
+      const upstreamUrl = "https://gen.pollinations.ai/image/" + encodeURIComponent(prompt) + "?model=black-forest-labs/flux.1-schnell&width=1024&height=1024&safe=true";
+      const upstream = await fetch(upstreamUrl, { headers: { "Authorization": "Bearer " + env.POLLINATIONS_API_KEY, "Accept": "image/*" } });
+      if (!upstream.ok) return json({ error: "Image provider returned HTTP " + upstream.status }, upstream.status);
+      const headers = new Headers(cors);
+      headers.set("Content-Type", upstream.headers.get("Content-Type") || "image/jpeg");
+      headers.set("Cache-Control", "no-store");
+      return new Response(upstream.body, { status: 200, headers });
+    }
+
     if (!env.FABLE_API_KEY) return json({ error: "FABLE_API_KEY server secret is not configured" }, 503);
 
     if (url.pathname === "/api/video/create" && request.method === "POST") {
