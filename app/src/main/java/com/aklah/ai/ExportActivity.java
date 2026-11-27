@@ -499,7 +499,7 @@ public class ExportActivity extends AppCompatActivity {
                         long edge = Math.min(transitionUs, Math.max(1L, durationUs / 2L));
                         // Wipe is drawn into the overlay bitmap itself, so the
                         // overlay must remain fully visible for that transition.
-                        float alpha = (transitionMode == 3 || transitionMode == 5) ? 1f : 0f;
+                        float alpha = (transitionMode == 3 || transitionMode == 5 || transitionMode == 8 || transitionMode == 9) ? 1f : 0f;
                         if (transitionMode != 3 && transitionMode != 5 && transitionMode != 8 && transitionMode != 9) {
                             if (t < edge) alpha = 1f - t / (float) edge;
                             else if (t > durationUs - edge)
