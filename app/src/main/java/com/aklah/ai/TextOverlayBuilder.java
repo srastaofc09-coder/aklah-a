@@ -3,6 +3,7 @@ package com.aklah.ai;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.text.Layout;
@@ -140,7 +141,11 @@ public class TextOverlayBuilder {
         Bitmap bmp = Bitmap.createBitmap(bw, bh, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bmp);
         if (l.bgColor != 0) {
-            canvas.drawColor(l.bgColor);
+            int bgAlpha = Color.alpha(l.bgColor)
+                    * Math.max(0, Math.min(255, l.opacity)) / 255;
+            int background = Color.argb(bgAlpha, Color.red(l.bgColor),
+                    Color.green(l.bgColor), Color.blue(l.bgColor));
+            canvas.drawColor(background);
         }
         canvas.translate(padX + outlinePad / 2f, padY + outlinePad / 2f);
         if (l.strokeWidth > 0f) {
