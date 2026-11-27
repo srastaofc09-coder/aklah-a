@@ -469,13 +469,13 @@ public class ExportActivity extends AppCompatActivity {
                         float alpha = 0f;
                         boolean atStart = t < edge;
                         boolean atEnd = t > durationUs - edge;
-                        if (transitionMode == 3 || transitionMode == 5 || transitionMode == 8 || transitionMode == 9 || transitionMode == 10 || transitionMode == 11 || transitionMode == 12 || transitionMode == 13 || transitionMode == 14 || transitionMode == 15 || transitionMode == 16 || transitionMode == 17) {
+                        if (transitionMode == 3 || transitionMode == 5 || transitionMode == 8 || transitionMode == 9 || transitionMode == 10 || transitionMode == 11 || transitionMode == 12 || transitionMode == 13 || transitionMode == 14 || transitionMode == 15 || transitionMode == 16 || transitionMode == 17 || transitionMode == 18 || transitionMode == 19 || transitionMode == 20 || transitionMode == 21) {
                             float progress = atStart ? 1f - t / (float) edge
                                     : atEnd ? (t - (durationUs - edge)) / (float) edge : 0f;
                             if (progress > 0f) {
-                                transitionPaint.setColor(transitionMode == 8 || transitionMode == 13 || transitionMode == 15 ? Color.WHITE : transitionMode == 9 ? 0xFFFF3B30 : transitionMode == 10 || transitionMode == 11 || transitionMode == 16 || transitionMode == 17 ? 0xFFFFD166 : Color.BLACK);
+                                transitionPaint.setColor(transitionMode == 8 || transitionMode == 13 || transitionMode == 15 ? Color.WHITE : transitionMode == 9 ? 0xFFFF3B30 : transitionMode == 18 ? 0xFF00D9FF : transitionMode == 19 ? 0xFF9B59FF : transitionMode == 20 ? 0xFF20D080 : transitionMode == 21 ? 0xFFFF6B4A : transitionMode == 10 || transitionMode == 11 || transitionMode == 16 || transitionMode == 17 ? 0xFFFFD166 : Color.BLACK);
                                 transitionPaint.setAlpha(255);
-                                if (transitionMode >= 14 && transitionMode <= 17) {
+                                if (transitionMode >= 14 && transitionMode <= 21) {
                                     float p = Math.min(1f, Math.max(0f, progress));
                                     float w = transitionBitmap.getWidth(), h = transitionBitmap.getHeight();
                                     float q = p * 2f;
