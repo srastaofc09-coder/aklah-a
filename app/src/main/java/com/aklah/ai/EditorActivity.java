@@ -2139,7 +2139,57 @@ public class EditorActivity extends AppCompatActivity {
                 else toast("Next clip nahi hai");
                 break;
             case 10: showAdvancedClipTools(); break;
+            case 11: duplicateClipMultiple(); break;
+            case 12: moveSelectedClipToEdge(true); break;
+            case 13: moveSelectedClipToEdge(false); break;
+            case 14: keepOnlySelectedClip(); break;
         }
+    }
+
+    private void duplicateClipMultiple() {
+        int index = currentIndex();
+        if (index < 0 || index >= clips.size()) { toast("Pehle clip select karein"); return; }
+        android.widget.EditText input = new android.widget.EditText(this);
+        input.setInputType(2); input.setHint("Copies (1-20)"); input.setText("3");
+        new AlertDialog.Builder(this).setTitle("Duplicate Selected Clip")
+                .setMessage("Original ke baad copies add hongi.").setView(input)
+                .setPositiveButton("Duplicate", (d, w) -> {
+                    int count;
+                    try { count = Integer.parseInt(input.getText().toString()); } catch (Exception e) { count = 0; }
+                    if (count < 1 || count > 20) { toast("1 se 20 copies choose karein"); return; }
+                    pushUndo();
+                    ClipItem original = clips.get(index).copy();
+                    for (int n = 0; n < count; n++) clips.add(index + 1 + n, original.copy());
+                    reload(index + count, 0); saveProject(false); refreshStrip();
+                    toast(count + " clip copies added");
+                }).setNegativeButton("Cancel", null).show();
+    }
+
+    private void moveSelectedClipToEdge(boolean toStart) {
+        int index = currentIndex();
+        if (index < 0 || index >= clips.size()) return;
+        if (index == (toStart ? 0 : clips.size() - 1)) { toast("Clip already us position par hai"); return; }
+        pushUndo();
+        ClipItem item = clips.remove(index);
+        clips.add(toStart ? 0 : clips.size(), item);
+        int newIndex = toStart ? 0 : clips.size() - 1;
+        reload(newIndex, 0); saveProject(false); refreshStrip();
+        toast(toStart ? "Clip timeline ke start par move hui" : "Clip timeline ke end par move hui");
+    }
+
+    private void keepOnlySelectedClip() {
+        int index = currentIndex();
+        if (index < 0 || index >= clips.size()) return;
+        new AlertDialog.Builder(this).setTitle("Keep Selected Clip Only?")
+                .setMessage("Baaki video clips remove hongi. Undo available rahega.")
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Keep Selected", (d, w) -> {
+                    pushUndo();
+                    ClipItem keep = clips.get(index);
+                    clips.clear(); clips.add(keep);
+                    reload(0, 0); saveProject(false); refreshStrip();
+                    toast("Selected clip retained");
+                }).show();
     }
 
     private void setAllClipsMuted(boolean muted) {
