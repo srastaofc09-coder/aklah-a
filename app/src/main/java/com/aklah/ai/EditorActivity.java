@@ -80,6 +80,7 @@ public class EditorActivity extends AppCompatActivity {
     private boolean voiceRecording = false;
     private long voiceRecordingStartMs = 0L;
     private TextView voiceRecordButton;
+    private ClipItem copiedClipStyle;
 
     private final List<TextLayer> texts = new ArrayList<>();
     private final List<TextView> textViews = new ArrayList<>();
@@ -215,6 +216,9 @@ public class EditorActivity extends AppCompatActivity {
         addButton(r6, "Blur / Fill", () -> { ClipItem c = selectedClip(); if (c != null) chooseBlur(c); });
         addButton(r6, "Mask", () -> { ClipItem c = selectedClip(); if (c != null) editMaskBounds(c); });
         addButton(r6, "Motion Presets", () -> { ClipItem c = selectedClip(); if (c != null) chooseMotionPreset(c); });
+        addButton(r6, "Copy Style", () -> copyClipStyle());
+        addButton(r6, "Paste Style", () -> pasteClipStyle(false));
+        addButton(r6, "Paste to All", () -> pasteClipStyle(true));
         LinearLayout r7 = findViewById(R.id.row7);
         addButton(r7, "Canvas Ratio", () -> chooseCanvasRatio());
         addButton(r7, "Creator Studio", () -> showStudioTools());
@@ -453,6 +457,77 @@ public class EditorActivity extends AppCompatActivity {
         int i = currentIndex();
         player.setVolume(i >= 0 && clips.get(i).muted ? 0f : clips.get(i).volume);
         if (i >= 0) player.setPlaybackSpeed(clips.get(i).speed);
+    }
+
+    // Copy/paste a clip's complete editable look and motion without replacing its media or trim.
+    private void copyClipStyle() {
+        ClipItem clip = selectedClip();
+        if (clip == null) return;
+        copiedClipStyle = clip.copy();
+        toast("Clip style copied: visual, motion, transition and audio effects");
+    }
+
+    private void pasteClipStyle(boolean allClips) {
+        if (copiedClipStyle == null) {
+            toast("Pehle kisi clip par Copy Style karein");
+            return;
+        }
+        int selected = currentIndex();
+        if (selected < 0 || selected >= clips.size()) return;
+        pushUndo();
+        if (allClips) {
+            for (ClipItem target : clips) copyClipStyleValues(copiedClipStyle, target);
+            toast("Copied style sabhi clips par apply ho gaya");
+        } else {
+            copyClipStyleValues(copiedClipStyle, clips.get(selected));
+            toast("Style selected clip par apply ho gaya");
+        }
+        saveProject(false);
+        applyCurrentClipAudio();
+        refreshStrip();
+        if (player != null) reload(selected, Math.max(0L, player.getCurrentPosition()));
+    }
+
+    private void copyClipStyleValues(ClipItem from, ClipItem to) {
+        // Preserve target URI, in/out trim, and mute state; copy editable attributes only.
+        to.volume = from.volume;
+        to.voicePitch = from.voicePitch;
+        to.voiceEnhancer = from.voiceEnhancer;
+        to.fadeInMs = from.fadeInMs;
+        to.fadeOutMs = from.fadeOutMs;
+        to.rotationDegrees = from.rotationDegrees;
+        to.cropMode = from.cropMode;
+        to.speed = from.speed;
+        to.opacity = from.opacity;
+        to.brightness = from.brightness;
+        to.contrast = from.contrast;
+        to.saturation = from.saturation;
+        to.flipX = from.flipX;
+        to.flipY = from.flipY;
+        to.blurSigma = from.blurSigma;
+        to.filterStrength = from.filterStrength;
+        to.redScale = from.redScale;
+        to.greenScale = from.greenScale;
+        to.blueScale = from.blueScale;
+        to.transitionType = from.transitionType;
+        to.transitionDurationMs = from.transitionDurationMs;
+        to.maskEnabled = from.maskEnabled;
+        to.maskMode = from.maskMode;
+        to.maskX = from.maskX;
+        to.maskY = from.maskY;
+        to.maskWidth = from.maskWidth;
+        to.maskHeight = from.maskHeight;
+        to.keyStartScale = from.keyStartScale;
+        to.keyEndScale = from.keyEndScale;
+        to.keyStartRotation = from.keyStartRotation;
+        to.keyEndRotation = from.keyEndRotation;
+        to.keyStartX = from.keyStartX;
+        to.keyStartY = from.keyStartY;
+        to.keyEndX = from.keyEndX;
+        to.keyEndY = from.keyEndY;
+        to.keyStartMs = from.keyStartMs;
+        to.keyEndMs = from.keyEndMs;
+        to.keyEasing = from.keyEasing;
     }
 
     private void deleteClip() {
