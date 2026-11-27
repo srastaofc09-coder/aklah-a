@@ -63,6 +63,10 @@ public class EditorActivity extends AppCompatActivity {
     private LinearLayout strip;
     private float timelineZoom = 1f;
     private ScaleGestureDetector timelineScaleDetector;
+    private HorizontalScrollView timelineRulerScroll;
+    private HorizontalScrollView timelineClipScroll;
+    private final List<HorizontalScrollView> timelineLaneScrolls = new ArrayList<>();
+    private boolean timelineScrollSyncing;
 
     private final List<TextLayer> texts = new ArrayList<>();
     private final List<TextView> textViews = new ArrayList<>();
@@ -117,6 +121,9 @@ public class EditorActivity extends AppCompatActivity {
 
         ((TextView) findViewById(R.id.tvEditorTitle)).setText(project.name);
         strip = findViewById(R.id.clipStrip);
+        timelineRulerScroll = findViewById(R.id.timelineRulerScroll);
+        timelineClipScroll = findViewById(R.id.timelineClipScroll);
+        setupTimelineScrollSync();
         timelineScaleDetector = new ScaleGestureDetector(this, new ScaleGestureDetector.SimpleOnScaleGestureListener() {
             @Override public boolean onScale(ScaleGestureDetector detector) {
                 timelineZoom = Math.max(0.55f, Math.min(3.5f, timelineZoom * detector.getScaleFactor()));
@@ -2194,6 +2201,23 @@ public class EditorActivity extends AppCompatActivity {
         refreshStrip();
     }
 
+    private void setupTimelineScrollSync() {
+        View.OnScrollChangeListener syncListener = (view, scrollX, scrollY, oldX, oldY) -> {
+            if (timelineScrollSyncing) return;
+            timelineScrollSyncing = true;
+            if (timelineRulerScroll != null && view != timelineRulerScroll)
+                timelineRulerScroll.scrollTo(scrollX, 0);
+            if (timelineClipScroll != null && view != timelineClipScroll)
+                timelineClipScroll.scrollTo(scrollX, 0);
+            for (HorizontalScrollView lane : new ArrayList<>(timelineLaneScrolls)) {
+                if (lane != view) lane.scrollTo(scrollX, 0);
+            }
+            timelineScrollSyncing = false;
+        };
+        if (timelineRulerScroll != null) timelineRulerScroll.setOnScrollChangeListener(syncListener);
+        if (timelineClipScroll != null) timelineClipScroll.setOnScrollChangeListener(syncListener);
+    }
+
     private void renderTimelineRuler() {
         LinearLayout ruler = findViewById(R.id.timelineRuler);
         if (ruler == null) return;
@@ -2215,6 +2239,7 @@ public class EditorActivity extends AppCompatActivity {
             int width = Math.max(dp(48), (int) (step * pixelsPerSecond));
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(width, dp(23));
             tick.setLayoutParams(lp);
+            tick.setOnClickListener(v -> seekTimelineToMs(sec * 1000L));
             ruler.addView(tick);
         }
     }
@@ -2260,6 +2285,9 @@ public class EditorActivity extends AppCompatActivity {
     private void renderTimelineLayerLanes() {
         LinearLayout lanes = findViewById(R.id.timelineLayerStrip);
         if (lanes == null) return;
+        int sharedScrollX = timelineRulerScroll != null ? timelineRulerScroll.getScrollX()
+                : timelineClipScroll != null ? timelineClipScroll.getScrollX() : 0;
+        timelineLaneScrolls.clear();
         lanes.removeAllViews();
 
         LinearLayout audioContent = addTimelineLane(lanes, "♫ AUDIO", 0xFF8ED8C1,
@@ -2340,6 +2368,13 @@ public class EditorActivity extends AppCompatActivity {
                 layer.endMs = layer.startMs + durationMs;
             });
         }
+        lanes.post(() -> {
+            timelineScrollSyncing = true;
+            if (timelineRulerScroll != null) timelineRulerScroll.scrollTo(sharedScrollX, 0);
+            if (timelineClipScroll != null) timelineClipScroll.scrollTo(sharedScrollX, 0);
+            for (HorizontalScrollView lane : timelineLaneScrolls) lane.scrollTo(sharedScrollX, 0);
+            timelineScrollSyncing = false;
+        });
     }
 
     private LinearLayout addTimelineLane(LinearLayout parent, String label, int color,
@@ -2376,6 +2411,17 @@ public class EditorActivity extends AppCompatActivity {
         scroll.setHorizontalScrollBarEnabled(true);
         scroll.setFillViewport(false);
         row.addView(scroll, new LinearLayout.LayoutParams(0, dp(44), 1f));
+        timelineLaneScrolls.add(scroll);
+        scroll.setOnScrollChangeListener((view, scrollX, scrollY, oldX, oldY) -> {
+            if (timelineScrollSyncing) return;
+            timelineScrollSyncing = true;
+            if (timelineRulerScroll != null) timelineRulerScroll.scrollTo(scrollX, 0);
+            if (timelineClipScroll != null) timelineClipScroll.scrollTo(scrollX, 0);
+            for (HorizontalScrollView lane : timelineLaneScrolls) {
+                if (lane != scroll) lane.scrollTo(scrollX, 0);
+            }
+            timelineScrollSyncing = false;
+        });
         LinearLayout content = new LinearLayout(this);
         content.setOrientation(LinearLayout.HORIZONTAL);
         content.setGravity(Gravity.CENTER_VERTICAL);

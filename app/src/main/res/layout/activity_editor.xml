@@ -150,6 +150,7 @@
     </HorizontalScrollView>
 
     <HorizontalScrollView
+        android:id="@+id/timelineClipScroll"
         android:layout_width="match_parent"
         android:layout_height="64dp"
         android:fillViewport="false"
