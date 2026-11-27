@@ -974,7 +974,7 @@ public class EditorActivity extends AppCompatActivity {
                 "Duplicate Clip × N", "Move Clip to Start", "Move Clip to End", "Keep Selected Only",
                 "Set All Clip Speed", "Copy Transition to All", "Reset All Clip Visuals", "Set All Clip Volume", "Copy Visual Grade to All",
                 "Copy Audio Treatment to All", "Set All Clips Opacity",
-                "Set All Clips Rotation", "Set All Clips Crop", "Toggle All Horizontal Flip", "Toggle All Vertical Flip", "Bulk Color Correction"
+                "Set All Clips Rotation", "Set All Clips Crop", "Toggle All Horizontal Flip", "Toggle All Vertical Flip", "Bulk Color Correction", "Bulk Fade & Transition Timing"
         };
         final String[] subtitles = {
                 "Copy selected overlay", "Cycle left / center / right",
@@ -986,10 +986,10 @@ public class EditorActivity extends AppCompatActivity {
                 "Set speed for every video clip", "Use selected clip's transition everywhere",
                 "Clear visual edits across the project", "Set shared volume for all clips",
                 "Copy color/filter/blur settings", "Copy fades/voice/audio settings", "Set opacity for every clip",
-                "Apply rotation to every clip", "Set canvas crop for every clip", "Flip every clip left/right", "Flip every clip up/down", "Adjust brightness, contrast and saturation project-wide"
+                "Apply rotation to every clip", "Set canvas crop for every clip", "Flip every clip left/right", "Flip every clip up/down", "Adjust brightness, contrast and saturation project-wide", "Set fade in/out and transition length for every clip"
         };
-        final String[] icons = {"⧉", "↔", "◷", "◴", "⟲", "⇄", "🔇", "🔊", "⏮", "⏭", "✦", "⧉×", "⇤", "⇥", "✓", "⏩", "↔", "◌", "🔉", "🎨", "🎚", "◐", "⟳", "▣", "↔", "↕", "🎨"};
-        final int[] actions = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26};
+        final String[] icons = {"⧉", "↔", "◷", "◴", "⟲", "⇄", "🔇", "🔊", "⏮", "⏭", "✦", "⧉×", "⇤", "⇥", "✓", "⏩", "↔", "◌", "🔉", "🎨", "🎚", "◐", "⟳", "▣", "↔", "↕", "🎨", "⌁"};
+        final int[] actions = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27};
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -2164,7 +2164,72 @@ public class EditorActivity extends AppCompatActivity {
             case 24: toggleAllClipFlip(true); break;
             case 25: toggleAllClipFlip(false); break;
             case 26: showBulkColorCorrection(); break;
+            case 27: showBulkFadeTransitionTiming(); break;
         }
+    }
+
+    private void showBulkFadeTransitionTiming() {
+        if (clips.isEmpty()) { toast("Timeline mein clips nahi hain"); return; }
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(dp(18), dp(10), dp(18), dp(8));
+
+        TextView fadeInLabel = new TextView(this);
+        fadeInLabel.setTextColor(0xFFFFFFFF);
+        fadeInLabel.setText("Fade In: 0.0 sec");
+        SeekBar fadeIn = new SeekBar(this);
+        fadeIn.setMax(30); fadeIn.setProgress(0);
+        fadeIn.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            public void onProgressChanged(SeekBar b, int value, boolean fromUser) { fadeInLabel.setText("Fade In: " + (value / 10f) + " sec"); }
+            public void onStartTrackingTouch(SeekBar b) {}
+            public void onStopTrackingTouch(SeekBar b) {}
+        });
+        root.addView(fadeInLabel); root.addView(fadeIn);
+
+        TextView fadeOutLabel = new TextView(this);
+        fadeOutLabel.setTextColor(0xFFFFFFFF);
+        fadeOutLabel.setText("Fade Out: 0.0 sec");
+        SeekBar fadeOut = new SeekBar(this);
+        fadeOut.setMax(30); fadeOut.setProgress(0);
+        fadeOut.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            public void onProgressChanged(SeekBar b, int value, boolean fromUser) { fadeOutLabel.setText("Fade Out: " + (value / 10f) + " sec"); }
+            public void onStartTrackingTouch(SeekBar b) {}
+            public void onStopTrackingTouch(SeekBar b) {}
+        });
+        root.addView(fadeOutLabel); root.addView(fadeOut);
+
+        TextView transitionLabel = new TextView(this);
+        transitionLabel.setTextColor(0xFFFFFFFF);
+        transitionLabel.setText("Transition Duration: 0.5 sec");
+        SeekBar transition = new SeekBar(this);
+        transition.setMax(30); transition.setProgress(5);
+        transition.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            public void onProgressChanged(SeekBar b, int value, boolean fromUser) { transitionLabel.setText("Transition Duration: " + (value / 10f) + " sec"); }
+            public void onStartTrackingTouch(SeekBar b) {}
+            public void onStopTrackingTouch(SeekBar b) {}
+        });
+        root.addView(transitionLabel); root.addView(transition);
+
+        new AlertDialog.Builder(this).setTitle("Bulk Fade & Transition Timing")
+                .setMessage("Fade settings apply to every clip. Transition duration updates clips that already have a transition; transition type is preserved.")
+                .setView(root).setNegativeButton("Cancel", null)
+                .setNeutralButton("Reset Fades", (d, w) -> {
+                    pushUndo();
+                    for (ClipItem clip : clips) { clip.fadeInMs = 0L; clip.fadeOutMs = 0L; }
+                    saveProject(false); refreshStrip();
+                    toast("All clip fades reset; transitions preserved");
+                }).setPositiveButton("Apply to All", (d, w) -> {
+                    pushUndo();
+                    long inMs = fadeIn.getProgress() * 100L;
+                    long outMs = fadeOut.getProgress() * 100L;
+                    long transitionMs = transition.getProgress() * 100L;
+                    for (ClipItem clip : clips) {
+                        clip.fadeInMs = inMs; clip.fadeOutMs = outMs;
+                        if (clip.transitionType != 0) clip.transitionDurationMs = transitionMs;
+                    }
+                    saveProject(false); refreshStrip();
+                    toast("Fade in/out and active transition timing applied to all clips");
+                }).show();
     }
 
     private void showBulkColorCorrection() {
