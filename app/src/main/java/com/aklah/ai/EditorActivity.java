@@ -200,6 +200,7 @@ public class EditorActivity extends AppCompatActivity {
         addButton(r5, "Duplicate Clip", () -> duplicateClip());
         addButton(r5, "Mute / Unmute", () -> toggleClipMute());
         addButton(r5, "Clip Volume", () -> { ClipItem c = selectedClip(); if (c != null) chooseClipVolume(c); });
+        addButton(r5, "Audio Mix Studio", () -> { ClipItem c = selectedClip(); if (c != null) showAudioMixStudio(c); });
         addButton(r5, "Fade In", () -> { ClipItem c = selectedClip(); if (c != null) chooseClipFade(c, true); });
         addButton(r5, "Fade Out", () -> { ClipItem c = selectedClip(); if (c != null) chooseClipFade(c, false); });
         addButton(r5, "Voice FX", () -> { ClipItem c = selectedClip(); if (c != null) chooseVoiceChanger(c); });
@@ -1377,6 +1378,125 @@ public class EditorActivity extends AppCompatActivity {
                     toast(labels[which] + " voice saved • offline export");
                 })
                 .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void showAudioMixStudio(ClipItem clip) {
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(dp(18), dp(12), dp(18), dp(8));
+
+        TextView note = new TextView(this);
+        note.setText("Clip audio • settings save to project and MP4 export");
+        note.setTextColor(0xFFB8BBC4);
+        root.addView(note);
+
+        TextView volumeLabel = new TextView(this);
+        volumeLabel.setTextColor(0xFFFFD66B);
+        volumeLabel.setTextSize(18);
+        SeekBar volumeBar = new SeekBar(this);
+        volumeBar.setMax(150);
+        volumeBar.setProgress(Math.round(Math.max(0f, Math.min(1.5f, clip.volume)) * 100f));
+        volumeLabel.setText("Volume " + volumeBar.getProgress() + "%");
+        root.addView(volumeLabel);
+        root.addView(volumeBar);
+
+        android.widget.CheckBox mute = new android.widget.CheckBox(this);
+        mute.setText("Mute this clip");
+        mute.setTextColor(0xFFFFFFFF);
+        mute.setButtonTintList(android.content.res.ColorStateList.valueOf(0xFFFFD66B));
+        mute.setChecked(clip.muted);
+        root.addView(mute);
+
+        TextView fadeInLabel = new TextView(this);
+        fadeInLabel.setTextColor(0xFFFFD66B);
+        SeekBar fadeIn = new SeekBar(this);
+        fadeIn.setMax(100);
+        fadeIn.setProgress((int)Math.max(0L, Math.min(100L, clip.fadeInMs / 100L)));
+        fadeInLabel.setText("Fade in " + (fadeIn.getProgress() / 10f) + " sec");
+        root.addView(fadeInLabel);
+        root.addView(fadeIn);
+
+        TextView fadeOutLabel = new TextView(this);
+        fadeOutLabel.setTextColor(0xFFFFD66B);
+        SeekBar fadeOut = new SeekBar(this);
+        fadeOut.setMax(100);
+        fadeOut.setProgress((int)Math.max(0L, Math.min(100L, clip.fadeOutMs / 100L)));
+        fadeOutLabel.setText("Fade out " + (fadeOut.getProgress() / 10f) + " sec");
+        root.addView(fadeOutLabel);
+        root.addView(fadeOut);
+
+        LinearLayout presets = new LinearLayout(this);
+        presets.setOrientation(LinearLayout.HORIZONTAL);
+        presets.setGravity(Gravity.CENTER);
+        root.addView(presets);
+        String[] presetNames = {"No fades", "0.5s", "1s", "2s", "3s", "5s"};
+        int[] presetValues = {0, 5, 10, 20, 30, 50};
+        for (int p = 0; p < presetNames.length; p++) {
+            final int value = presetValues[p];
+            TextView chip = new TextView(this);
+            chip.setText(presetNames[p]);
+            chip.setTextColor(0xFFFFFFFF);
+            chip.setGravity(Gravity.CENTER);
+            chip.setPadding(dp(5), dp(8), dp(5), dp(8));
+            presets.addView(chip, new LinearLayout.LayoutParams(0, -2, 1f));
+            chip.setOnClickListener(v -> {
+                fadeIn.setProgress(value);
+                fadeOut.setProgress(value);
+            });
+        }
+
+        volumeBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
+                volumeLabel.setText("Volume " + progress + "%");
+                if (fromUser && player != null && currentIndex() >= 0
+                        && clips.get(currentIndex()) == clip) {
+                    player.setVolume(mute.isChecked() ? 0f : progress / 100f);
+                }
+            }
+            @Override public void onStartTrackingTouch(SeekBar bar) { }
+            @Override public void onStopTrackingTouch(SeekBar bar) { }
+        });
+        fadeIn.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
+                fadeInLabel.setText("Fade in " + String.format(Locale.US, "%.1f", progress / 10f) + " sec");
+            }
+            @Override public void onStartTrackingTouch(SeekBar bar) { }
+            @Override public void onStopTrackingTouch(SeekBar bar) { }
+        });
+        fadeOut.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
+                fadeOutLabel.setText("Fade out " + String.format(Locale.US, "%.1f", progress / 10f) + " sec");
+            }
+            @Override public void onStartTrackingTouch(SeekBar bar) { }
+            @Override public void onStopTrackingTouch(SeekBar bar) { }
+        });
+
+        new AlertDialog.Builder(this).setTitle("AUDIO MIX STUDIO")
+                .setView(root)
+                .setPositiveButton("Apply", (dialog, which) -> {
+                    pushUndo();
+                    clip.volume = volumeBar.getProgress() / 100f;
+                    clip.muted = mute.isChecked();
+                    clip.fadeInMs = fadeIn.getProgress() * 100L;
+                    clip.fadeOutMs = fadeOut.getProgress() * 100L;
+                    applyCurrentClipAudio();
+                    saveProject(false);
+                    refreshStrip();
+                    toast("Audio mix saved for preview and MP4 export");
+                })
+                .setNeutralButton("Reset", (dialog, which) -> {
+                    pushUndo();
+                    clip.volume = 1f;
+                    clip.muted = false;
+                    clip.fadeInMs = 0L;
+                    clip.fadeOutMs = 0L;
+                    applyCurrentClipAudio();
+                    saveProject(false);
+                    refreshStrip();
+                    toast("Clip audio reset");
+                })
+                .setNegativeButton("Cancel", (dialog, which) -> applyCurrentClipAudio())
                 .show();
     }
 
