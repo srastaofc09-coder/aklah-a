@@ -1592,24 +1592,101 @@ public class EditorActivity extends AppCompatActivity {
     }
 
     private void chooseClipSpeed(ClipItem clip) {
-        final float[] speeds = {0.25f, 0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f, 3f};
-        final String[] labels = {"0.25×", "0.5×", "0.75×", "1× Normal", "1.25×", "1.5×", "2×", "3×"};
-        int selected = 3;
-        for (int i = 0; i < speeds.length; i++) if (Math.abs(clip.speed - speeds[i]) < 0.01f) selected = i;
-        new AlertDialog.Builder(this)
-                .setTitle("Clip Speed • Preview")
-                .setSingleChoiceItems(labels, selected, (dialog, which) -> {
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(dp(18), dp(12), dp(18), dp(8));
+
+        TextView speedLabel = new TextView(this);
+        speedLabel.setTextColor(0xFFFFD66B);
+        speedLabel.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
+        speedLabel.setGravity(Gravity.CENTER);
+        root.addView(speedLabel, new LinearLayout.LayoutParams(-1, -2));
+
+        TextView durationLabel = new TextView(this);
+        durationLabel.setTextColor(0xFFE8E8E8);
+        durationLabel.setGravity(Gravity.CENTER);
+        root.addView(durationLabel, new LinearLayout.LayoutParams(-1, -2));
+
+        SeekBar speedBar = new SeekBar(this);
+        speedBar.setMax(75); // 0.25x to 4.00x in 0.05x steps
+        speedBar.setProgress(Math.max(0, Math.min(75,
+                Math.round((clip.speed - 0.25f) / 0.05f))));
+        root.addView(speedBar, new LinearLayout.LayoutParams(-1, -2));
+
+        LinearLayout presets = new LinearLayout(this);
+        presets.setOrientation(LinearLayout.HORIZONTAL);
+        presets.setGravity(Gravity.CENTER);
+        root.addView(presets, new LinearLayout.LayoutParams(-1, -2));
+        final float[] presetSpeeds = {0.25f, 0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f, 3f, 4f};
+        for (float preset : presetSpeeds) {
+            TextView chip = new TextView(this);
+            chip.setText(preset == 1f ? "1×" : String.format(Locale.US, "%.2g×", preset));
+            chip.setTextColor(0xFFFFFFFF);
+            chip.setGravity(Gravity.CENTER);
+            chip.setPadding(dp(7), dp(8), dp(7), dp(8));
+            presets.addView(chip, new LinearLayout.LayoutParams(0, -2, 1f));
+            chip.setOnClickListener(v -> speedBar.setProgress(
+                    Math.max(0, Math.min(75, Math.round((preset - 0.25f) / 0.05f)))));
+        }
+
+        final long originalDuration = clipDurationMs(clip);
+        final float[] selectedSpeed = {clip.speed};
+        Runnable updateLabels = () -> {
+            selectedSpeed[0] = 0.25f + speedBar.getProgress() * 0.05f;
+            speedLabel.setText(String.format(Locale.US, "Speed  %.2f×", selectedSpeed[0]));
+            if (originalDuration > 0L) {
+                long estimated = Math.max(1L, Math.round(originalDuration / selectedSpeed[0]));
+                durationLabel.setText("Estimated clip length: " + formatDuration(estimated)
+                        + "  •  Original: " + formatDuration(originalDuration));
+            } else {
+                durationLabel.setText("Clip duration estimate unavailable");
+            }
+            if (player != null && currentIndex() >= 0
+                    && clips.get(currentIndex()) == clip) {
+                player.setPlaybackSpeed(selectedSpeed[0]);
+            }
+        };
+        speedBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
+                updateLabels.run();
+            }
+            @Override public void onStartTrackingTouch(SeekBar bar) { }
+            @Override public void onStopTrackingTouch(SeekBar bar) { }
+        });
+        updateLabels.run();
+
+        new AlertDialog.Builder(this).setTitle("PRECISION SPEED STUDIO")
+                .setView(root)
+                .setPositiveButton("Apply", (dialog, which) -> {
                     pushUndo();
-                    clip.speed = speeds[which];
-                    if (player != null && currentIndex() >= 0) player.setPlaybackSpeed(clip.speed);
+                    clip.speed = selectedSpeed[0];
+                    if (player != null && currentIndex() >= 0
+                            && clips.get(currentIndex()) == clip) {
+                        player.setPlaybackSpeed(clip.speed);
+                    }
                     saveProject(false);
-                    dialog.dismiss();
-                    toast("Speed preview aur MP4 export dono par apply hoga");
+                    refreshStrip();
+                    toast(String.format(Locale.US, "Speed %.2f× saved • preview and MP4 export", clip.speed));
                 })
-                .setNegativeButton("Cancel", null)
+                .setNeutralButton("Reset 1×", (dialog, which) -> {
+                    pushUndo();
+                    clip.speed = 1f;
+                    if (player != null && currentIndex() >= 0
+                            && clips.get(currentIndex()) == clip) player.setPlaybackSpeed(1f);
+                    saveProject(false);
+                    refreshStrip();
+                    toast("Normal speed restored");
+                })
+                .setNegativeButton("Cancel", (dialog, which) -> applyCurrentClipAudio())
                 .show();
     }
 
+    private String formatDuration(long durationMs) {
+        long totalSeconds = Math.max(0L, durationMs / 1000L);
+        long minutes = totalSeconds / 60L;
+        long seconds = totalSeconds % 60L;
+        return String.format(Locale.US, "%d:%02d", minutes, seconds);
+    }
 
     private void chooseFilterPreset(ClipItem clip) {
         final String[] names = {
