@@ -76,6 +76,8 @@ public class ProjectStore {
                         AudioTrackItem track = new AudioTrackItem(a.getString("uri"));
                         track.volume = (float) a.optDouble("volume", 1.0);
                         track.startMs = a.optLong("startMs", 0L);
+                        track.trimStartMs = a.optLong("trimStartMs", 0L);
+                        track.trimEndMs = a.optLong("trimEndMs", -1L);
                         track.muted = a.optBoolean("muted", false);
                         p.audioTracks.add(track);
                     }
@@ -177,6 +179,8 @@ public class ProjectStore {
                     ao.put("uri", track.uri);
                     ao.put("volume", track.volume);
                     ao.put("startMs", track.startMs);
+                    ao.put("trimStartMs", track.trimStartMs);
+                    ao.put("trimEndMs", track.trimEndMs);
                     ao.put("muted", track.muted);
                     audioTracks.put(ao);
                 }
