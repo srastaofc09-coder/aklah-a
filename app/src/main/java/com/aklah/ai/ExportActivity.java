@@ -265,8 +265,29 @@ public class ExportActivity extends AppCompatActivity {
                     float radius = Math.min(right - left, bottom - top) / 2f;
                     maskCanvas.drawCircle((left + right) / 2f, (top + bottom) / 2f,
                             radius, maskPaint);
+                } else if (c.maskMode == 3) {
+                    // Offline satisfying-style pattern cover (static geometric mosaic).
+                    maskCanvas.save();
+                    maskCanvas.clipRect(left, top, right, bottom);
+                    int[] colors = {
+                            0xFFFFD166, 0xFF06D6A0, 0xFF118AB2,
+                            0xFFEF476F, 0xFF9B5DE5, 0xFFF15BB5
+                    };
+                    Paint pattern = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    pattern.setStyle(Paint.Style.FILL);
+                    float cell = Math.max(70f, Math.min(right - left, bottom - top) / 4f);
+                    for (int row = -1; row < 16; row++) {
+                        for (int col = -1; col < 24; col++) {
+                            pattern.setColor(colors[Math.floorMod(row * 3 + col, colors.length)]);
+                            float cx = left + col * cell + cell / 2f;
+                            float cy = top + row * cell + cell / 2f;
+                            float radius = cell * (0.28f + ((row + col) & 1) * 0.12f);
+                            maskCanvas.drawCircle(cx, cy, radius, pattern);
+                        }
+                    }
+                    maskCanvas.restore();
                 } else {
-                    // Rectangle and blur-mode privacy fallback conceal the selected region.
+                    // Rectangle and black privacy cover conceal the selected region.
                     maskCanvas.drawRect(left, top, right, bottom, maskPaint);
                 }
                 TextureOverlay maskOverlay = BitmapOverlay.createStaticBitmapOverlay(maskBitmap);
