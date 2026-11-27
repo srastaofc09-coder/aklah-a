@@ -138,7 +138,7 @@ public final class FableVideoMaker {
         for (File file : files) {
             items.add(new EditedMediaItem.Builder(MediaItem.fromUri(Uri.fromFile(file))).build());
         }
-        EditedMediaItemSequence sequence = new EditedMediaItemSequence.Builder(items).build();
+        EditedMediaItemSequence sequence = new EditedMediaItemSequence(items);
         Composition composition = new Composition.Builder(sequence).build();
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<ExportException> failure = new AtomicReference<>();
