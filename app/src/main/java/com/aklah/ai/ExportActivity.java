@@ -162,6 +162,8 @@ public class ExportActivity extends AppCompatActivity {
             height = 720;
         } else if (resId == R.id.rb1080) {
             height = 1080;
+        } else if (resId == R.id.rb4k) {
+            height = 2160;
         }
 
         int bitrate = 5000000;
