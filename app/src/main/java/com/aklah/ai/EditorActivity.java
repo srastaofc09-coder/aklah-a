@@ -144,13 +144,20 @@ public class EditorActivity extends AppCompatActivity {
         addButton(r5, "Duplicate Clip", () -> duplicateClip());
         addButton(r5, "Mute / Unmute", () -> toggleClipMute());
         LinearLayout r6 = findViewById(R.id.row6);
-        addButton(r6, "Text Style", () -> chooseTextForPreset());
-        addButton(r6, "More Tools", () -> showMoreTools());
+        // Direct clip-tool shortcuts replace the old generic Advanced Manual Tools dialog.
+        addButton(r6, "Crop / Ratio", () -> { ClipItem c = selectedClip(); if (c != null) chooseCropMode(c); });
+        addButton(r6, "Rotate / Mirror", () -> showAdvancedClipTools());
+        addButton(r6, "Filter", () -> { ClipItem c = selectedClip(); if (c != null) chooseFilterPreset(c); });
+        addButton(r6, "Speed / Flow", () -> { ClipItem c = selectedClip(); if (c != null) chooseClipSpeed(c); });
+        addButton(r6, "Color", () -> { ClipItem c = selectedClip(); if (c != null) showColorAdjustments(c); });
+        addButton(r6, "Blur / Fill", () -> { ClipItem c = selectedClip(); if (c != null) chooseBlur(c); });
+        addButton(r6, "Mask", () -> { ClipItem c = selectedClip(); if (c != null) editMaskBounds(c); });
         LinearLayout r7 = findViewById(R.id.row7);
-        addButton(r7, "Studio Tools", () -> showStudioTools());
-        addButton(r7, "Add Subtitle", () -> addSubtitleAtPlayhead());
-        addButton(r7, "Advanced Manual Tools", () -> showAdvancedManualBatch());
+        addButton(r7, "Creator Studio", () -> showStudioTools());
+        addButton(r7, "Subtitle", () -> addSubtitleAtPlayhead());
         addButton(r7, "Audio Tracks", () -> manageAudioTracks());
+        addButton(r7, "Keyframe / Transition", () -> showAdvancedManualBatch());
+        addButton(r7, "More Editing", () -> showMoreTools());
         addButton(r3, "Project Save Karein", () -> saveProject(true));
         addButton(r3, "Export MP4", () -> openExport());
         setupToolCategories();
@@ -1811,13 +1818,15 @@ public class EditorActivity extends AppCompatActivity {
     private void setupToolCategories() {
         LinearLayout tabs = findViewById(R.id.toolCategories);
         if (tabs == null) return;
-        final String[] names = {"Edit", "Text", "Overlay", "Audio", "More"};
+        final String[] names = {"Edit", "Clip", "Text", "Overlay", "Audio", "Creator", "More"};
         final int[][] groups = {
                 {R.id.row1Scroll, R.id.row2Scroll},
+                {R.id.row6Scroll},
                 {R.id.row4Scroll},
                 {R.id.row7Scroll},
                 {R.id.row5Scroll, R.id.row7Scroll},
-                {R.id.row6Scroll}
+                {R.id.row7Scroll},
+                {R.id.row2Scroll, R.id.row5Scroll}
         };
         final int[] selected = {0};
         Runnable[] refresh = new Runnable[1];
