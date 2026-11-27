@@ -1957,79 +1957,112 @@ public class EditorActivity extends AppCompatActivity {
         LinearLayout lanes = findViewById(R.id.timelineLayerStrip);
         if (lanes == null) return;
         lanes.removeAllViews();
-        float d = getResources().getDisplayMetrics().density;
 
-        TextView audioLabel = new TextView(this);
-        audioLabel.setText("♫ AUDIO");
-        audioLabel.setTextColor(0xFF8ED8C1);
-        audioLabel.setTextSize(10);
-        audioLabel.setGravity(Gravity.CENTER);
-        audioLabel.setPadding(dp(8), 0, dp(8), 0);
-        lanes.addView(audioLabel, new LinearLayout.LayoutParams(dp(64), dp(42)));
-
-        TextView addAudio = new TextView(this);
-        addAudio.setText("+ Music");
-        addAudio.setTextColor(0xFF8ED8C1);
-        addAudio.setTextSize(11);
-        addAudio.setGravity(Gravity.CENTER);
-        addAudio.setBackground(roundRect(0xFF16312B, 0xFF32665A, 1, 9));
-        LinearLayout.LayoutParams addLp = new LinearLayout.LayoutParams(dp(68), dp(38));
-        addLp.setMargins(dp(3), 0, dp(5), 0);
-        lanes.addView(addAudio, addLp);
-        addAudio.setOnClickListener(v -> manageAudioTracks());
-
+        LinearLayout audioContent = addTimelineLane(lanes, "♫ AUDIO", 0xFF8ED8C1,
+                "+ Music", () -> manageAudioTracks());
         for (int i = 0; i < project.audioTracks.size(); i++) {
             final AudioTrackItem track = project.audioTracks.get(i);
             TextView block = new TextView(this);
             block.setText("♫ Music " + (i + 1) + "\n" + sec(track.startMs)
-                    + "  •  " + Math.round(track.volume * 100f) + "%"
-                    + (track.muted ? " MUTE" : ""));
+                    + " • " + Math.round(track.volume * 100f) + "%"
+                    + (track.muted ? " • MUTE" : ""));
             block.setTextColor(0xFFE0FFF4);
             block.setTextSize(10);
             block.setGravity(Gravity.CENTER);
-            block.setBackground(roundRect(track.muted ? 0xFF292D32 : 0xFF174238, 0xFF3E8876, 1, 8));
-            int width = (int) Math.max(dp(96), Math.min(dp(240), dp(96) + track.startMs / 1000f * dp(8)));
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(width, dp(38));
-            lp.setMargins(dp(3), 0, dp(3), 0);
-            lanes.addView(block, lp);
+            block.setBackground(roundRect(track.muted ? 0xFF292D32 : 0xFF174238,
+                    0xFF3E8876, 1, 8));
+            long duration = getMediaDurationMs(track.uri);
+            int width = duration > 0
+                    ? (int) Math.max(dp(96), Math.min(dp(900), duration / 1000f * dp(32)))
+                    : dp(180);
+            int offset = (int) Math.max(0, Math.min(dp(1600),
+                    track.startMs / 1000f * dp(32)));
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(width, dp(36));
+            lp.setMargins(offset, 0, dp(5), 0);
+            audioContent.addView(block, lp);
             block.setOnClickListener(v -> editAudioTrack(track));
         }
 
-        TextView textLabel = new TextView(this);
-        textLabel.setText("T TEXT");
-        textLabel.setTextColor(0xFFFFD66B);
-        textLabel.setTextSize(10);
-        textLabel.setGravity(Gravity.CENTER);
-        textLabel.setPadding(dp(8), 0, dp(8), 0);
-        lanes.addView(textLabel, new LinearLayout.LayoutParams(dp(54), dp(42)));
-
-        TextView addTextBlock = new TextView(this);
-        addTextBlock.setText("+ Text");
-        addTextBlock.setTextColor(0xFFFFD66B);
-        addTextBlock.setTextSize(11);
-        addTextBlock.setGravity(Gravity.CENTER);
-        addTextBlock.setBackground(roundRect(0xFF352A15, 0xFF8D7133, 1, 9));
-        LinearLayout.LayoutParams textAddLp = new LinearLayout.LayoutParams(dp(64), dp(38));
-        textAddLp.setMargins(dp(3), 0, dp(5), 0);
-        lanes.addView(addTextBlock, textAddLp);
-        addTextBlock.setOnClickListener(v -> addText());
-
+        LinearLayout textContent = addTimelineLane(lanes, "T TEXT", 0xFFFFD66B,
+                "+ Text", () -> addText());
         for (int i = 0; i < texts.size(); i++) {
             final TextLayer layer = texts.get(i);
             TextView block = new TextView(this);
             String value = layer.text == null ? "Text" : layer.text.replace("\n", " ");
-            if (value.length() > 14) value = value.substring(0, 14) + "…";
+            if (value.length() > 18) value = value.substring(0, 18) + "…";
             block.setText("T " + value + "\n" + sec(layer.startMs) + " → "
                     + (layer.endMs < 0 ? "end" : sec(layer.endMs)));
             block.setTextColor(0xFFFFF1C6);
             block.setTextSize(10);
             block.setGravity(Gravity.CENTER);
             block.setBackground(roundRect(0xFF3A2D16, 0xFFB18A3C, 1, 8));
-            int width = (int) Math.max(dp(88), Math.min(dp(220), dp(88) + Math.max(0, layer.startMs) / 1000f * dp(8)));
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(width, dp(38));
-            lp.setMargins(dp(3), 0, dp(3), 0);
-            lanes.addView(block, lp);
-            block.setOnClickListener(v -> chooseTextToEdit());
+            long duration = layer.endMs > layer.startMs
+                    ? layer.endMs - layer.startMs : 3000L;
+            int width = (int) Math.max(dp(90), Math.min(dp(900),
+                    duration / 1000f * dp(32)));
+            int offset = (int) Math.max(0, Math.min(dp(1600),
+                    layer.startMs / 1000f * dp(32)));
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(width, dp(36));
+            lp.setMargins(offset, 0, dp(5), 0);
+            textContent.addView(block, lp);
+            block.setOnClickListener(v -> editText(layer));
+        }
+    }
+
+    private LinearLayout addTimelineLane(LinearLayout parent, String label, int color,
+                                         String addLabel, Runnable addAction) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setBackgroundColor(0xFF0D0F14);
+        LinearLayout.LayoutParams rowLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(46));
+        rowLp.setMargins(0, 0, 0, dp(2));
+        parent.addView(row, rowLp);
+
+        TextView title = new TextView(this);
+        title.setText(label);
+        title.setTextColor(color);
+        title.setTextSize(10);
+        title.setGravity(Gravity.CENTER);
+        title.setTypeface(null, Typeface.BOLD);
+        row.addView(title, new LinearLayout.LayoutParams(dp(58), dp(42)));
+
+        TextView add = new TextView(this);
+        add.setText(addLabel);
+        add.setTextColor(color);
+        add.setTextSize(10);
+        add.setGravity(Gravity.CENTER);
+        add.setBackground(roundRect(0xFF1A2023, color, 1, 8));
+        LinearLayout.LayoutParams addLp = new LinearLayout.LayoutParams(dp(58), dp(34));
+        addLp.setMargins(0, 0, dp(5), 0);
+        row.addView(add, addLp);
+        add.setOnClickListener(v -> addAction.run());
+
+        HorizontalScrollView scroll = new HorizontalScrollView(this);
+        scroll.setHorizontalScrollBarEnabled(true);
+        scroll.setFillViewport(false);
+        row.addView(scroll, new LinearLayout.LayoutParams(0, dp(44), 1f));
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.HORIZONTAL);
+        content.setGravity(Gravity.CENTER_VERTICAL);
+        scroll.addView(content, new HorizontalScrollView.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.MATCH_PARENT));
+        return content;
+    }
+
+    private long getMediaDurationMs(String uri) {
+        if (uri == null || uri.isEmpty()) return -1L;
+        android.media.MediaMetadataRetriever retriever = new android.media.MediaMetadataRetriever();
+        try {
+            retriever.setDataSource(this, Uri.parse(uri));
+            String value = retriever.extractMetadata(
+                    android.media.MediaMetadataRetriever.METADATA_KEY_DURATION);
+            return value == null ? -1L : Long.parseLong(value);
+        } catch (Exception ignored) {
+            return -1L;
+        } finally {
+            try { retriever.release(); } catch (Exception ignored) { }
         }
     }
 
