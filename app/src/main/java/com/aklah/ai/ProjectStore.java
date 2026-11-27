@@ -80,6 +80,8 @@ public class ProjectStore {
                         track.trimStartMs = a.optLong("trimStartMs", 0L);
                         track.trimEndMs = a.optLong("trimEndMs", -1L);
                         track.muted = a.optBoolean("muted", false);
+                        track.fadeInMs = a.optLong("fadeInMs", 0L);
+                        track.fadeOutMs = a.optLong("fadeOutMs", 0L);
                         p.audioTracks.add(track);
                     }
                 }
@@ -187,6 +189,8 @@ public class ProjectStore {
                     ao.put("trimStartMs", track.trimStartMs);
                     ao.put("trimEndMs", track.trimEndMs);
                     ao.put("muted", track.muted);
+                    ao.put("fadeInMs", track.fadeInMs);
+                    ao.put("fadeOutMs", track.fadeOutMs);
                     audioTracks.put(ao);
                 }
                 o.put("audioTracks", audioTracks);
