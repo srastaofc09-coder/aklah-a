@@ -75,6 +75,12 @@ public class MainActivity extends AppCompatActivity {
                     startActivity(new Intent(MainActivity.this, AIStudioActivity.class));
                     return;
                 }
+                if ("Face Hide AI".equals(name) || "Audio Studio".equals(name)) {
+                    Intent offline = new Intent(MainActivity.this, OfflineToolsActivity.class);
+                    offline.putExtra("offline_tool", "Audio Studio".equals(name) ? "audio" : "face");
+                    startActivity(offline);
+                    return;
+                }
                 Toast.makeText(MainActivity.this,
                         name + " (agle round mein aayega)",
                         Toast.LENGTH_SHORT).show();
