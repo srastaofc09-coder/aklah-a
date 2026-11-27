@@ -1094,7 +1094,7 @@ public class EditorActivity extends AppCompatActivity {
                     ClipItem c = selectedClip();
                     if (c == null) return;
                     if (which == 0) {
-                        final String[] transitions = {"None", "Crossfade", "Dip to Black", "Horizontal Wipe", "White Flash", "Vertical Wipe"};
+                        final String[] transitions = {"None", "Crossfade", "Dip to Black", "Horizontal Wipe", "White Flash", "Vertical Wipe", "Red Flash", "Gold Flash", "White Horizontal Wipe", "Red Vertical Wipe"};
                         new AlertDialog.Builder(this).setTitle("Transition Type")
                                 .setSingleChoiceItems(transitions, c.transitionType, (d, selected) -> {
                                     pushUndo();

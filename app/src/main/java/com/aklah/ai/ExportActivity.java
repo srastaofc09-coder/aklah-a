@@ -455,13 +455,13 @@ public class ExportActivity extends AppCompatActivity {
                         float alpha = 0f;
                         boolean atStart = t < edge;
                         boolean atEnd = t > durationUs - edge;
-                        if (transitionMode == 3 || transitionMode == 5) {
+                        if (transitionMode == 3 || transitionMode == 5 || transitionMode == 8 || transitionMode == 9) {
                             float progress = atStart ? 1f - t / (float) edge
                                     : atEnd ? (t - (durationUs - edge)) / (float) edge : 0f;
                             if (progress > 0f) {
-                                transitionPaint.setColor(Color.BLACK);
+                                transitionPaint.setColor(transitionMode == 8 ? Color.WHITE : transitionMode == 9 ? 0xFFFF3B30 : Color.BLACK);
                                 transitionPaint.setAlpha(255);
-                                if (transitionMode == 3) {
+                                if (transitionMode == 3 || transitionMode == 8) {
                                     float coverWidth = transitionBitmap.getWidth()
                                             * Math.min(1f, Math.max(0f, progress));
                                     float left = atStart ? 0f
@@ -482,8 +482,11 @@ public class ExportActivity extends AppCompatActivity {
                         } else if (atEnd) {
                             alpha = (t - (durationUs - edge)) / (float) edge;
                         }
-                        if (transitionMode != 3 && transitionMode != 5 && alpha > 0f) {
-                            transitionPaint.setColor(transitionMode == 4 ? Color.WHITE : Color.BLACK);
+                        if (transitionMode != 3 && transitionMode != 5 && transitionMode != 8 && transitionMode != 9 && alpha > 0f) {
+                            int flashColor = transitionMode == 4 ? Color.WHITE
+                                    : transitionMode == 6 ? 0xFFFF3B30
+                                    : transitionMode == 7 ? 0xFFFFD166 : Color.BLACK;
+                            transitionPaint.setColor(flashColor);
                             transitionPaint.setAlpha(255);
                             transitionCanvas.drawRect(0f, 0f, transitionBitmap.getWidth(),
                                     transitionBitmap.getHeight(), transitionPaint);
@@ -497,7 +500,7 @@ public class ExportActivity extends AppCompatActivity {
                         // Wipe is drawn into the overlay bitmap itself, so the
                         // overlay must remain fully visible for that transition.
                         float alpha = (transitionMode == 3 || transitionMode == 5) ? 1f : 0f;
-                        if (transitionMode != 3 && transitionMode != 5) {
+                        if (transitionMode != 3 && transitionMode != 5 && transitionMode != 8 && transitionMode != 9) {
                             if (t < edge) alpha = 1f - t / (float) edge;
                             else if (t > durationUs - edge)
                                 alpha = (t - (durationUs - edge)) / (float) edge;
