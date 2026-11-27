@@ -7,6 +7,8 @@ public class ClipItem {
     public long endMs; // -1 ka matlab clip ke end tak
     public boolean muted = false;
     public float volume = 1f; // 0..1 per-clip audio gain
+    public float voicePitch = 1f; // offline pitch shift, 0.65..1.6
+    public boolean voiceEnhancer = false; // offline noise gate + clarity filter
     public long fadeInMs = 0L;
     public long fadeOutMs = 0L;
     public int rotationDegrees = 0;
@@ -40,6 +42,8 @@ public class ClipItem {
         ClipItem copy = new ClipItem(uri, startMs, endMs);
         copy.muted = muted;
         copy.volume = volume;
+        copy.voicePitch = voicePitch;
+        copy.voiceEnhancer = voiceEnhancer;
         copy.fadeInMs = fadeInMs;
         copy.fadeOutMs = fadeOutMs;
         copy.rotationDegrees = rotationDegrees;
