@@ -1,6 +1,12 @@
 package com.aklah.ai;
 
 import android.content.Intent;
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.media.MediaRecorder;
+import android.os.Environment;
+import androidx.core.content.ContextCompat;
+import java.io.File;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.content.ClipData;
@@ -67,6 +73,10 @@ public class EditorActivity extends AppCompatActivity {
     private HorizontalScrollView timelineClipScroll;
     private final List<HorizontalScrollView> timelineLaneScrolls = new ArrayList<>();
     private boolean timelineScrollSyncing;
+    private ActivityResultLauncher<String> audioPermissionLauncher;
+    private MediaRecorder voiceRecorder;
+    private File voiceRecordingFile;
+    private boolean voiceRecording = false;
 
     private final List<TextLayer> texts = new ArrayList<>();
     private final List<TextView> textViews = new ArrayList<>();
@@ -88,6 +98,11 @@ public class EditorActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_editor);
 
+        audioPermissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestPermission(), granted -> {
+                    if (granted) startVoiceRecording();
+                    else toast("Voice-over ke liye microphone permission zaroori hai");
+                });
         brollPicker = registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
             if (uri == null || project == null) return;
             try { getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION); } catch (Exception ignored) { }
@@ -199,6 +214,7 @@ public class EditorActivity extends AppCompatActivity {
         addButton(r7, "Creator Studio", () -> showStudioTools());
         addButton(r7, "Subtitle", () -> addSubtitleAtPlayhead());
         addButton(r7, "Audio Tracks", () -> manageAudioTracks());
+        addButton(r7, "Voice-over REC", () -> toggleVoiceRecording());
         addButton(r7, "Keyframe / Transition", () -> showAdvancedManualBatch());
         addButton(r7, "More Editing", () -> showMoreTools());
         addButton(r3, "Project Save Karein", () -> saveProject(true));
@@ -238,6 +254,7 @@ public class EditorActivity extends AppCompatActivity {
     protected void onStop() {
         super.onStop();
         handler.removeCallbacks(tick);
+        if (voiceRecording) finishVoiceRecording();
         if (project != null) {
             saveProject(false);
         }
@@ -1862,6 +1879,88 @@ public class EditorActivity extends AppCompatActivity {
     // ---------- Save / Export ----------
 
     private static final int REQUEST_ADD_AUDIO_TRACK = 7412;
+
+    private void toggleVoiceRecording() {
+        if (voiceRecording) {
+            finishVoiceRecording();
+            return;
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                == PackageManager.PERMISSION_GRANTED) {
+            startVoiceRecording();
+        } else {
+            audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO);
+        }
+    }
+
+    private void startVoiceRecording() {
+        if (voiceRecording) return;
+        File directory = getExternalFilesDir(Environment.DIRECTORY_MUSIC);
+        if (directory == null) {
+            toast("Recording storage available nahi hai");
+            return;
+        }
+        if (!directory.exists() && !directory.mkdirs()) {
+            toast("Recording folder create nahi ho saka");
+            return;
+        }
+        voiceRecordingFile = new File(directory, "voiceover_" + System.currentTimeMillis() + ".m4a");
+        try {
+            voiceRecorder = new MediaRecorder(this);
+            voiceRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+            voiceRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+            voiceRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+            voiceRecorder.setAudioSamplingRate(44100);
+            voiceRecorder.setAudioEncodingBitRate(128000);
+            voiceRecorder.setOutputFile(voiceRecordingFile.getAbsolutePath());
+            voiceRecorder.prepare();
+            voiceRecorder.start();
+            voiceRecording = true;
+            toast("Voice-over recording started — button dobara dabakar stop karein");
+        } catch (Exception e) {
+            releaseVoiceRecorder();
+            voiceRecording = false;
+            toast("Voice-over recording start nahi ho saki");
+        }
+    }
+
+    private void finishVoiceRecording() {
+        if (!voiceRecording) return;
+        voiceRecording = false;
+        boolean saved = false;
+        try {
+            if (voiceRecorder != null) {
+                voiceRecorder.stop();
+                saved = voiceRecordingFile != null && voiceRecordingFile.exists()
+                        && voiceRecordingFile.length() > 1024L;
+            }
+        } catch (Exception ignored) {
+            saved = false;
+        } finally {
+            releaseVoiceRecorder();
+        }
+        if (saved && project != null) {
+            pushUndo();
+            AudioTrackItem track = new AudioTrackItem(Uri.fromFile(voiceRecordingFile).toString());
+            track.startMs = Math.max(0L, timelineMs());
+            project.audioTracks.add(track);
+            saveProject(false);
+            renderTimelineLayerLanes();
+            refreshStrip();
+            toast("Voice-over project audio track mein add ho gaya");
+        } else {
+            if (voiceRecordingFile != null) voiceRecordingFile.delete();
+            toast("Recording save nahi hui; phir se try karein");
+        }
+    }
+
+    private void releaseVoiceRecorder() {
+        if (voiceRecorder != null) {
+            try { voiceRecorder.reset(); } catch (Exception ignored) { }
+            try { voiceRecorder.release(); } catch (Exception ignored) { }
+            voiceRecorder = null;
+        }
+    }
 
     private void manageAudioTracks() {
         String[] options = new String[project.audioTracks.size() + 1];
