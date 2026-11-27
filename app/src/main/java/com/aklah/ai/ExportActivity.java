@@ -469,13 +469,35 @@ public class ExportActivity extends AppCompatActivity {
                         float alpha = 0f;
                         boolean atStart = t < edge;
                         boolean atEnd = t > durationUs - edge;
-                        if (transitionMode == 3 || transitionMode == 5 || transitionMode == 8 || transitionMode == 9 || transitionMode == 10 || transitionMode == 11 || transitionMode == 12 || transitionMode == 13) {
+                        if (transitionMode == 3 || transitionMode == 5 || transitionMode == 8 || transitionMode == 9 || transitionMode == 10 || transitionMode == 11 || transitionMode == 12 || transitionMode == 13 || transitionMode == 14 || transitionMode == 15 || transitionMode == 16 || transitionMode == 17) {
                             float progress = atStart ? 1f - t / (float) edge
                                     : atEnd ? (t - (durationUs - edge)) / (float) edge : 0f;
                             if (progress > 0f) {
-                                transitionPaint.setColor(transitionMode == 8 || transitionMode == 13 ? Color.WHITE : transitionMode == 9 ? 0xFFFF3B30 : transitionMode == 10 || transitionMode == 11 ? 0xFFFFD166 : Color.BLACK);
+                                transitionPaint.setColor(transitionMode == 8 || transitionMode == 13 || transitionMode == 15 ? Color.WHITE : transitionMode == 9 ? 0xFFFF3B30 : transitionMode == 10 || transitionMode == 11 || transitionMode == 16 || transitionMode == 17 ? 0xFFFFD166 : Color.BLACK);
                                 transitionPaint.setAlpha(255);
-                                if (transitionMode == 3 || transitionMode == 8 || transitionMode == 10 || transitionMode == 12) {
+                                if (transitionMode >= 14 && transitionMode <= 17) {
+                                    float p = Math.min(1f, Math.max(0f, progress));
+                                    float w = transitionBitmap.getWidth(), h = transitionBitmap.getHeight();
+                                    float q = p * 2f;
+                                    android.graphics.Path diagonal = new android.graphics.Path();
+                                    if (transitionMode == 17) {
+                                        diagonal.moveTo(w, 0f);
+                                        diagonal.lineTo(w, Math.max(0f, Math.min(h, q * h)));
+                                        if (p > 0.5f) diagonal.lineTo(Math.max(0f, w - (q - 1f) * w), h);
+                                        diagonal.lineTo(0f, h);
+                                        diagonal.lineTo(0f, Math.max(0f, h - q * h));
+                                        if (p > 0.5f) diagonal.lineTo(w, Math.max(0f, h - (q - 1f) * h));
+                                    } else {
+                                        diagonal.moveTo(0f, 0f);
+                                        diagonal.lineTo(Math.min(w, q * w), 0f);
+                                        if (p > 0.5f) diagonal.lineTo(w, Math.min(h, (q - 1f) * h));
+                                        diagonal.lineTo(w, h);
+                                        diagonal.lineTo(Math.max(0f, w - q * w), h);
+                                        if (p > 0.5f) diagonal.lineTo(0f, Math.max(0f, h - (q - 1f) * h));
+                                    }
+                                    diagonal.close();
+                                    transitionCanvas.drawPath(diagonal, transitionPaint);
+                                } else if (transitionMode == 3 || transitionMode == 8 || transitionMode == 10 || transitionMode == 12) {
                                     float coverWidth = transitionBitmap.getWidth()
                                             * Math.min(1f, Math.max(0f, progress));
                                     float left = (atStart != (transitionMode == 12)) ? 0f

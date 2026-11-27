@@ -1096,7 +1096,7 @@ public class EditorActivity extends AppCompatActivity {
                     ClipItem c = selectedClip();
                     if (c == null) return;
                     if (which == 0) {
-                        final String[] transitions = {"None", "Crossfade", "Dip to Black", "Horizontal Wipe", "White Flash", "Vertical Wipe", "Red Flash", "Gold Flash", "White Horizontal Wipe", "Red Vertical Wipe", "Gold Horizontal Wipe", "Gold Vertical Wipe", "Reverse Black Horizontal Wipe", "Reverse White Vertical Wipe"};
+                        final String[] transitions = {"None", "Crossfade", "Dip to Black", "Horizontal Wipe", "White Flash", "Vertical Wipe", "Red Flash", "Gold Flash", "White Horizontal Wipe", "Red Vertical Wipe", "Gold Horizontal Wipe", "Gold Vertical Wipe", "Reverse Black Horizontal Wipe", "Reverse White Vertical Wipe", "Black Diagonal Wipe", "White Diagonal Wipe", "Gold Diagonal Wipe", "Reverse Gold Diagonal Wipe"};
                         new AlertDialog.Builder(this).setTitle("Transition Type")
                                 .setSingleChoiceItems(transitions, c.transitionType, (d, selected) -> {
                                     pushUndo();
@@ -1115,7 +1115,7 @@ public class EditorActivity extends AppCompatActivity {
                                                 long[] values = {250L, 500L, 750L, 1000L};
                                                 c.transitionDurationMs = values[duration];
                                                 saveProject(false); refreshStrip(); dd.dismiss();
-                                                toast("Transition saved; export supports fade, horizontal/vertical wipe and white flash. Crossfade remains a fade approximation.");
+                                                toast("Transition saved; export includes directional, colored and diagonal wipes. Crossfade remains a fade approximation.");
                                             }).setNegativeButton("Keep 500 ms", null).show();
                                 }).setNegativeButton("Cancel", null).show();
                     } else if (which == 1) {
