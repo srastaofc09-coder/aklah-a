@@ -966,7 +966,7 @@ public class EditorActivity extends AppCompatActivity {
                                     }
                                 }).setNegativeButton("Cancel", null).show();
                     } else if (which == 2) {
-                        final String[] modes = {"Disable mask", "Rectangle cover", "Circle cover", "Blur region (privacy cover)"};
+                        final String[] modes = {"Disable mask", "Rectangle cover", "Circle cover", "Black privacy cover", "Satisfying Pattern Cover (offline)"};
                         new AlertDialog.Builder(this).setTitle("Manual Mask Mode").setItems(modes, (d, mode) -> {
                             pushUndo();
                             c.maskEnabled = mode != 0;
@@ -1033,7 +1033,8 @@ public class EditorActivity extends AppCompatActivity {
                 "Rotate 90°", "Rotate 180°", "Rotate 270°", "Reset Rotation",
                 "Flip Horizontal", "Flip Vertical", "Crop / Aspect Ratio", "Playback Speed",
                 "Color Adjustments", "Quick Filter Presets", "Gaussian Blur",
-                "Clip Volume", "Audio Fade In", "Audio Fade Out", "Reset All Advanced Edits"
+                "Clip Volume", "Audio Fade In", "Audio Fade Out", "Reset All Advanced Edits",
+                "Offline Voice Changer", "Offline Voice Enhancer"
         };
         new AlertDialog.Builder(this)
                 .setTitle("ADVANCED CLIP LAB")
@@ -1072,13 +1073,44 @@ public class EditorActivity extends AppCompatActivity {
                             clip.redScale = 1f;
                             clip.greenScale = 1f;
                             clip.blueScale = 1f;
+                            clip.voicePitch = 1f;
+                            clip.voiceEnhancer = false;
                             break;
+                        case 15: chooseVoiceChanger(clip); return;
+                        case 16:
+                            pushUndo();
+                            clip.voiceEnhancer = !clip.voiceEnhancer;
+                            saveProject(false);
+                            refreshStrip();
+                            toast(clip.voiceEnhancer ? "Offline voice enhancer ON" : "Offline voice enhancer OFF");
+                            return;
                     }
                     saveProject(false);
                     applyCurrentClipAudio();
                     refreshStrip();
                     toast("Advanced edit save ho gaya; export par apply hoga");
                 })
+                .show();
+    }
+
+    private void chooseVoiceChanger(ClipItem clip) {
+        final float[] pitches = {1.0f, 0.78f, 1.25f, 1.50f};
+        final String[] labels = {"Normal", "Deep Voice", "High Voice", "Chipmunk"};
+        int selected = 0;
+        for (int i = 0; i < pitches.length; i++) {
+            if (Math.abs(clip.voicePitch - pitches[i]) < 0.02f) selected = i;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("Offline Voice Changer")
+                .setMessage("Pitch effect MP4 export mein locally apply hoga.")
+                .setSingleChoiceItems(labels, selected, (dialog, which) -> {
+                    pushUndo();
+                    clip.voicePitch = pitches[which];
+                    saveProject(false);
+                    dialog.dismiss();
+                    toast(labels[which] + " voice saved • offline export");
+                })
+                .setNegativeButton("Cancel", null)
                 .show();
     }
 
