@@ -36,17 +36,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class AIStudioActivity extends AppCompatActivity {
-    private static final String PREFS = "aklah_ai_settings";
-    private static final String KEY = "groq_api_key";
-    private static final String POLLINATIONS_KEY = "pollinations_api_key";
+    private static final String FABLE_BACKEND_URL = "https://aklah-fable-api.YOUR_ACCOUNT.workers.dev";
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private final Handler main = new Handler(Looper.getMainLooper());
-    private EditText keyBox, pollinationsKeyBox, promptBox;
+    private EditText promptBox, durationBox;
     private TextView result, status;
     private ImageView image;
     private ProgressBar progress;
     private Button scriptBtn, storyBtn, imageBtn, videoBtn;
-    private byte[] latestVideoBytes;
+    private java.io.File latestVideoFile;
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -63,37 +61,7 @@ public class AIStudioActivity extends AppCompatActivity {
         TextView title = text("AKLAH AI STUDIO", 25, 0xffffffff, true);
         body.addView(title);
         body.addView(text("AI Script • Storyboard • Image • Video", 14, 0xffb8c1d9, false));
-        keyBox = new EditText(this);
-        keyBox.setSingleLine(true);
-        keyBox.setTextColor(0xffffffff);
-        keyBox.setHintTextColor(0xff929bb0);
-        keyBox.setHint("Groq API key (saved on this phone)");
-        keyBox.setInputType(129);
-        keyBox.setText(getSharedPreferences(PREFS, MODE_PRIVATE).getString(KEY, ""));
-        body.addView(keyBox, lp(-1, dp(52), 0, 0, 0, 0));
-        Button save = button("Save Groq API Key");
-        save.setOnClickListener(v -> {
-            getSharedPreferences(PREFS, MODE_PRIVATE).edit().putString(KEY,
-                    keyBox.getText().toString().trim()).apply();
-            Toast.makeText(this, "Groq key phone par save ho gayi", Toast.LENGTH_SHORT).show();
-        });
-        body.addView(save);
-        pollinationsKeyBox = new EditText(this);
-        pollinationsKeyBox.setSingleLine(true);
-        pollinationsKeyBox.setTextColor(0xffffffff);
-        pollinationsKeyBox.setHintTextColor(0xff929bb0);
-        pollinationsKeyBox.setHint("Pollinations key (sk_...) for image/video");
-        pollinationsKeyBox.setInputType(129);
-        pollinationsKeyBox.setText(getSharedPreferences(PREFS, MODE_PRIVATE).getString(POLLINATIONS_KEY, ""));
-        body.addView(pollinationsKeyBox, lp(-1, dp(52), 0, dp(8), 0, 0));
-        Button savePollinations = button("Save Image / Video API Key");
-        savePollinations.setOnClickListener(v -> {
-            getSharedPreferences(PREFS, MODE_PRIVATE).edit().putString(POLLINATIONS_KEY,
-                    pollinationsKeyBox.getText().toString().trim()).apply();
-            toast("Pollinations key phone par save ho gayi");
-        });
-        body.addView(savePollinations);
-        body.addView(text("Free/Quest credits are limited. Check Pollinations model price and set a small key budget before generating.", 12, 0xffaab6d2, false));
+        body.addView(text("AI keys are kept on the private backend; no API key entry is needed in this app.", 13, 0xffaab6d2, false));
         promptBox = new EditText(this);
         promptBox.setTextColor(0xffffffff);
         promptBox.setHintTextColor(0xff929bb0);
@@ -102,6 +70,14 @@ public class AIStudioActivity extends AppCompatActivity {
         promptBox.setMinLines(4);
         promptBox.setMaxLines(8);
         body.addView(promptBox, lp(-1, -2, dp(0), dp(8), 0, 0));
+        durationBox = new EditText(this);
+        durationBox.setSingleLine(true);
+        durationBox.setInputType(2);
+        durationBox.setTextColor(0xffffffff);
+        durationBox.setHintTextColor(0xff929bb0);
+        durationBox.setHint("Video duration in minutes (1–6)");
+        durationBox.setText("5");
+        body.addView(durationBox, lp(-1, dp(52), 0, dp(8), 0, 0));
 
         scriptBtn = button("AI Script Writer");
         scriptBtn.setOnClickListener(v -> generateText("Write a compelling short-video script based on this idea. Include hook, narration, scene-by-scene visuals, on-screen captions, and ending. Keep it original and suitable for a general audience. Idea: "));
@@ -115,22 +91,9 @@ public class AIStudioActivity extends AppCompatActivity {
         imageBtn = button("Generate AI Image / Thumbnail");
         imageBtn.setOnClickListener(v -> generateImage());
         body.addView(imageBtn);
-        videoBtn = button("Generate AI Video (6 sec)");
-        videoBtn.setOnClickListener(v -> generateVideo());
+        videoBtn = button("Generate Fable AI Video (1–6 min)");
+        videoBtn.setOnClickListener(v -> generateFableVideo());
         body.addView(videoBtn);
-        Button localVideo = button("FREE Local Video Maker (6 sec)");
-        localVideo.setOnClickListener(v -> {
-            String idea = promptBox.getText().toString().trim();
-            if (idea.isEmpty()) { toast("Pehle video ka idea likho"); return; }
-            runTask("Phone par local video render ho rahi hai (free)...", () -> {
-                Uri saved = LocalVideoMaker.create(this, idea);
-                main.post(() -> result.setText("Free local video saved: " + saved + "\\nMovies/AKLAH AI mein check karo."));
-            });
-        });
-        body.addView(localVideo);
-        Button saveVideo = button("Save Generated Video");
-        saveVideo.setOnClickListener(v -> { if (latestVideoBytes == null) toast("Pehle AI video generate karo"); else { Uri saved = saveVideoBytes(latestVideoBytes); toast(saved == null ? "Video save nahi hui" : "Video Movies/AKLAH AI mein save ho gayi"); } });
-        body.addView(saveVideo);
         progress = new ProgressBar(this);
         progress.setVisibility(View.GONE);
         body.addView(progress, lp(-2, dp(40), 0, dp(10), 0, 0));
@@ -175,11 +138,9 @@ public class AIStudioActivity extends AppCompatActivity {
     private void generateImage() {
         String prompt = promptBox.getText().toString().trim();
         if (prompt.isEmpty()) { toast("Pehle image ka prompt likho"); return; }
-        runTask("Pollinations AI image generate ho rahi hai...", () -> {
-            String key = pollinationsKey();
-            String url = "https://gen.pollinations.ai/image/" + java.net.URLEncoder.encode(prompt, "UTF-8")
-                    + "?model=black-forest-labs/flux.1-schnell&width=1024&height=1024&safe=true";
-            byte[] bytes = fetchMedia(url, key, 180000);
+        runTask("AI image backend se generate ho rahi hai...", () -> {
+            String url = FABLE_BACKEND_URL + "/api/image?prompt=" + java.net.URLEncoder.encode(prompt, "UTF-8");
+            byte[] bytes = fetchMedia(url, 180000);
             Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
             if (bitmap == null) throw new Exception("Image response decode nahi hui");
             Uri saved = saveImageBytes(bytes, "image/jpeg");
@@ -190,33 +151,29 @@ public class AIStudioActivity extends AppCompatActivity {
         });
     }
 
-    private void generateVideo() {
+    private void generateFableVideo() {
         String prompt = promptBox.getText().toString().trim();
         if (prompt.isEmpty()) { toast("Pehle video ka prompt likho"); return; }
-        runTask("Pollinations AI video generate ho rahi hai; kuch waqt lag sakta hai...", () -> {
-            String key = pollinationsKey();
-            String url = "https://gen.pollinations.ai/video/" + java.net.URLEncoder.encode(prompt, "UTF-8")
-                    + "?model=kandinskylab/kandinsky-6.0-lite&duration=6&safe=true";
-            byte[] bytes = fetchMedia(url, key, 300000);
-            if (bytes.length < 1000) throw new Exception("Video response bahut chhoti/invalid hai");
-            latestVideoBytes = bytes;
-            main.post(() -> result.setText("AI video generated (" + (bytes.length / 1024) + " KB). Tap Save Generated Video."));
+        int minutes;
+        try { minutes = Integer.parseInt(durationBox.getText().toString().trim()); }
+        catch (Exception e) { toast("Duration 1 se 6 minutes select karo"); return; }
+        if (minutes < 1 || minutes > 6) { toast("Duration 1 se 6 minutes select karo"); return; }
+        runTask("Fable long-video project start ho raha hai...", () -> {
+            java.io.File file = FableVideoMaker.create(this, prompt, minutes * 60, FABLE_BACKEND_URL,
+                    message -> main.post(() -> status.setText(message)));
+            latestVideoFile = file;
+            Uri saved = saveVideoFile(file);
+            main.post(() -> result.setText(saved == null
+                    ? "Final video bani, lekin Gallery save fail hua: " + file.getAbsolutePath()
+                    : "Fable AI video (" + minutes + " min target) saved: " + saved + "\\nMovies/AKLAH AI mein check karo."));
         });
     }
 
-    private String pollinationsKey() throws Exception {
-        String key = pollinationsKeyBox.getText().toString().trim();
-        if (key.isEmpty()) key = getSharedPreferences(PREFS, MODE_PRIVATE).getString(POLLINATIONS_KEY, "");
-        if (key == null || key.trim().isEmpty()) throw new Exception("Pollinations API key save karo (sk_...)");
-        return key.trim();
-    }
-
-    private byte[] fetchMedia(String url, String key, int timeout) throws Exception {
+    private byte[] fetchMedia(String url, int timeout) throws Exception {
         HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
         connection.setRequestMethod("GET");
         connection.setConnectTimeout(30000);
         connection.setReadTimeout(timeout);
-        connection.setRequestProperty("Authorization", "Bearer " + key);
         connection.setRequestProperty("Accept", "*/*");
         int code = connection.getResponseCode();
         InputStream stream = code >= 200 && code < 300 ? connection.getInputStream() : connection.getErrorStream();
@@ -231,26 +188,22 @@ public class AIStudioActivity extends AppCompatActivity {
         connection.disconnect();
         if (code < 200 || code >= 300) {
             String error = new String(data, "UTF-8");
-            throw new Exception("Pollinations API " + code + ": " + (error.length() > 600 ? error.substring(0, 600) : error));
+            throw new Exception("AI backend HTTP " + code + ": " + (error.length() > 600 ? error.substring(0, 600) : error));
         }
         if (type != null && type.toLowerCase().contains("json")) {
             String response = new String(data, "UTF-8");
-            throw new Exception("Provider returned JSON instead of media: " + (response.length() > 500 ? response.substring(0, 500) : response));
+            throw new Exception("Backend returned JSON instead of media: " + (response.length() > 500 ? response.substring(0, 500) : response));
         }
         return data;
     }
 
     private JSONObject postGroq(JSONObject body) throws Exception {
-        String apiKey = keyBox.getText().toString().trim();
-        if (apiKey.isEmpty()) apiKey = getSharedPreferences(PREFS, MODE_PRIVATE).getString(KEY, "");
-        if (apiKey == null || apiKey.trim().isEmpty()) throw new Exception("Groq API key save karo");
-        HttpURLConnection connection = (HttpURLConnection) new URL("https://api.groq.com/openai/v1/chat/completions").openConnection();
+        HttpURLConnection connection = (HttpURLConnection) new URL(FABLE_BACKEND_URL + "/api/text").openConnection();
         connection.setRequestMethod("POST");
         connection.setConnectTimeout(30000);
         connection.setReadTimeout(180000);
         connection.setDoOutput(true);
         connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
-        connection.setRequestProperty("Authorization", "Bearer " + apiKey.trim());
         byte[] data = body.toString().getBytes("UTF-8");
         try (OutputStream out = connection.getOutputStream()) { out.write(data); }
         int code = connection.getResponseCode();
@@ -263,7 +216,7 @@ public class AIStudioActivity extends AppCompatActivity {
         }
         String response = new String(bytes.toByteArray(), "UTF-8");
         connection.disconnect();
-        if (code < 200 || code >= 300) throw new Exception("Groq API " + code + ": " + errorMessage(response));
+        if (code < 200 || code >= 300) throw new Exception("AI backend HTTP " + code + ": " + errorMessage(response));
         return new JSONObject(response);
     }
 
@@ -282,14 +235,22 @@ public class AIStudioActivity extends AppCompatActivity {
         }catch(Exception e){return null;}
     }
 
-    private Uri saveVideoBytes(byte[] bytes) {
+    private Uri saveVideoFile(java.io.File file) {
         try {
-            ContentValues v=new ContentValues();v.put(MediaStore.Video.Media.DISPLAY_NAME,"AKLAH_AI_"+System.currentTimeMillis()+".mp4");
-            v.put(MediaStore.Video.Media.MIME_TYPE,"video/mp4");v.put(MediaStore.Video.Media.RELATIVE_PATH,"Movies/AKLAH AI");
-            Uri uri=getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI,v);
-            if(uri!=null)try(OutputStream out=getContentResolver().openOutputStream(uri)){out.write(bytes);}
+            ContentValues v = new ContentValues();
+            v.put(MediaStore.Video.Media.DISPLAY_NAME, "AKLAH_AI_" + System.currentTimeMillis() + ".mp4");
+            v.put(MediaStore.Video.Media.MIME_TYPE, "video/mp4");
+            v.put(MediaStore.Video.Media.RELATIVE_PATH, "Movies/AKLAH AI");
+            Uri uri = getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, v);
+            if (uri == null) return null;
+            try (InputStream in = new java.io.FileInputStream(file);
+                 OutputStream out = getContentResolver().openOutputStream(uri)) {
+                if (out == null) return null;
+                byte[] buffer = new byte[65536]; int n;
+                while ((n = in.read(buffer)) != -1) out.write(buffer, 0, n);
+            }
             return uri;
-        }catch(Exception e){return null;}
+        } catch (Exception e) { return null; }
     }
 
     private interface Task { void run() throws Exception; }
