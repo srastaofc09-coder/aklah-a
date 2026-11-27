@@ -90,6 +90,8 @@ public class ProjectStore {
                         tl.startMs = t.getLong("start");
                         tl.endMs = t.getLong("end");
                         tl.color = t.getInt("color");
+                        tl.strokeColor = t.optInt("strokeColor", 0xFF000000);
+                        tl.strokeWidth = (float) t.optDouble("strokeWidth", 0.0);
                         tl.bgColor = t.getInt("bg");
                         tl.sizeSp = t.getInt("size");
                         tl.bold = t.getBoolean("bold");
@@ -192,6 +194,8 @@ public class ProjectStore {
                     to.put("start", t.startMs);
                     to.put("end", t.endMs);
                     to.put("color", t.color);
+                    to.put("strokeColor", t.strokeColor);
+                    to.put("strokeWidth", t.strokeWidth);
                     to.put("bg", t.bgColor);
                     to.put("size", t.sizeSp);
                     to.put("bold", t.bold);

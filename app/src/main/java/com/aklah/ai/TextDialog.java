@@ -76,6 +76,27 @@ public class TextDialog {
         final int[] textColor = {layer.color};
         root.addView(swatches(ctx, TEXT_COLORS, textColor));
 
+        root.addView(label(ctx, "Text Outline / Stroke"));
+        final CheckBox cbStroke = checkbox(ctx, "Outline enable karein", layer.strokeWidth > 0f);
+        root.addView(cbStroke);
+        final int[] strokeColor = {layer.strokeColor};
+        root.addView(swatches(ctx, TEXT_COLORS, strokeColor));
+        final TextView tvStroke = label(ctx, "Outline thickness: " + Math.round(layer.strokeWidth));
+        root.addView(tvStroke);
+        final SeekBar strokeBar = new SeekBar(ctx);
+        strokeBar.setMax(12);
+        strokeBar.setProgress(Math.max(0, Math.min(12, Math.round(layer.strokeWidth))));
+        strokeBar.setThumbTintList(ColorStateList.valueOf(GOLD));
+        strokeBar.setProgressTintList(ColorStateList.valueOf(GOLD));
+        strokeBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar s, int p, boolean fromUser) {
+                tvStroke.setText("Outline thickness: " + p);
+            }
+            @Override public void onStartTrackingTouch(SeekBar s) {}
+            @Override public void onStopTrackingTouch(SeekBar s) {}
+        });
+        root.addView(strokeBar);
+
         root.addView(label(ctx, "Background (X = koi nahi)"));
         final int[] bgColor = {layer.bgColor};
         root.addView(swatches(ctx, BG_COLORS, bgColor));
@@ -207,6 +228,8 @@ public class TextDialog {
             }
             layer.text = t;
             layer.color = textColor[0];
+            layer.strokeColor = strokeColor[0];
+            layer.strokeWidth = cbStroke.isChecked() ? strokeBar.getProgress() : 0f;
             layer.bgColor = bgColor[0];
             layer.sizeSp = sizeBar.getProgress() + 12;
             layer.bold = cbBold.isChecked();

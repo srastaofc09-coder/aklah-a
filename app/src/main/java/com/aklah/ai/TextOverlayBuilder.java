@@ -102,7 +102,8 @@ public class TextOverlayBuilder {
             paint.setShadowLayer(6f * scale, 2f * scale, 2f * scale, 0xFF000000);
         }
 
-        int avail = Math.max(50, maxW - 2 * padX);
+        int outlinePad = l.strokeWidth > 0f ? Math.round(l.strokeWidth * scale * 2f) : 0;
+        int avail = Math.max(50, maxW - 2 * padX - outlinePad);
         TextDirectionHeuristic dir = l.rtl
                 ? TextDirectionHeuristics.RTL : TextDirectionHeuristics.LTR;
 
@@ -133,14 +134,23 @@ public class TextOverlayBuilder {
                 .setAlignment(al)
                 .build();
 
-        int bw = w + 2 * padX;
-        int bh = layout.getHeight() + 2 * padY;
+        int bw = w + 2 * padX + outlinePad;
+        int bh = layout.getHeight() + 2 * padY + outlinePad;
         Bitmap bmp = Bitmap.createBitmap(bw, bh, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bmp);
         if (l.bgColor != 0) {
             canvas.drawColor(l.bgColor);
         }
-        canvas.translate(padX, padY);
+        canvas.translate(padX + outlinePad / 2f, padY + outlinePad / 2f);
+        if (l.strokeWidth > 0f) {
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeJoin(Paint.Join.ROUND);
+            paint.setStrokeWidth(l.strokeWidth * scale);
+            paint.setColor(l.strokeColor);
+            layout.draw(canvas);
+            paint.setStyle(Paint.Style.FILL);
+            paint.setColor(l.color);
+        }
         layout.draw(canvas);
         return bmp;
     }
