@@ -2302,14 +2302,14 @@ public class EditorActivity extends AppCompatActivity {
             textContent.addView(block, lp);
             block.setOnClickListener(v -> editText(layer));
             installTimelineDrag(block, delta -> {
-                long timelineDuration = totalTimelineDurationMs();
-                if (timelineDuration <= 0L || timelineDuration == C.TIME_UNSET) {
-                    timelineDuration = 0L;
-                    for (ClipItem clip : clips) timelineDuration += clipDurationMs(clip);
+                long dragTimelineDuration = totalTimelineDurationMs();
+                if (dragTimelineDuration <= 0L || dragTimelineDuration == C.TIME_UNSET) {
+                    dragTimelineDuration = 0L;
+                    for (ClipItem clip : clips) dragTimelineDuration += clipDurationMs(clip);
                 }
                 long durationMs = layer.endMs > layer.startMs
                         ? layer.endMs - layer.startMs
-                        : Math.max(1000L, timelineDuration - layer.startMs);
+                        : Math.max(1000L, dragTimelineDuration - layer.startMs);
                 layer.startMs = Math.max(0L, layer.startMs + delta);
                 layer.endMs = layer.startMs + durationMs;
             });
