@@ -62,6 +62,7 @@ public class EditorActivity extends AppCompatActivity {
         @Override
         public void run() {
             updateOverlay();
+            updateTimelineUi();
             handler.postDelayed(this, 200);
         }
     };
@@ -104,6 +105,26 @@ public class EditorActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.tvEditorTitle)).setText(project.name);
         strip = findViewById(R.id.clipStrip);
         overlay = findViewById(R.id.textOverlay);
+
+        findViewById(R.id.btnUndoTop).setOnClickListener(v -> undo());
+        findViewById(R.id.btnRedoTop).setOnClickListener(v -> redo());
+        findViewById(R.id.btnExportTop).setOnClickListener(v -> openExport());
+        findViewById(R.id.btnPlayPause).setOnClickListener(v -> {
+            if (player == null) return;
+            if (player.isPlaying()) player.pause(); else player.play();
+            ((TextView) findViewById(R.id.btnPlayPause)).setText(player.isPlaying() ? "Ⅱ" : "▶");
+        });
+        SeekBar timelineSeek = findViewById(R.id.timelineSeek);
+        timelineSeek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
+                if (fromUser && player != null) {
+                    long duration = player.getDuration();
+                    if (duration > 0 && duration != C.TIME_UNSET) player.seekTo((duration * progress) / 1000L);
+                }
+            }
+            @Override public void onStartTrackingTouch(SeekBar bar) { }
+            @Override public void onStopTrackingTouch(SeekBar bar) { }
+        });
 
         LinearLayout r1 = findViewById(R.id.row1);
         LinearLayout r2 = findViewById(R.id.row2);
@@ -1786,6 +1807,29 @@ public class EditorActivity extends AppCompatActivity {
         return String.format(Locale.US, "%.1fs", ms / 1000f);
     }
 
+    private void updateTimelineUi() {
+        if (player == null) return;
+        long pos = Math.max(0, player.getCurrentPosition());
+        long dur = player.getDuration();
+        TextView current = findViewById(R.id.tvPlayheadTime);
+        TextView total = findViewById(R.id.tvTotalTime);
+        SeekBar seek = findViewById(R.id.timelineSeek);
+        if (current != null) current.setText(clock(pos));
+        if (total != null) total.setText(dur > 0 && dur != C.TIME_UNSET ? clock(dur) : "00:00");
+        if (seek != null && dur > 0 && dur != C.TIME_UNSET && !seek.isPressed())
+            seek.setProgress((int) Math.min(1000L, pos * 1000L / dur));
+        TextView play = findViewById(R.id.btnPlayPause);
+        if (play != null) play.setText(player.isPlaying() ? "Ⅱ" : "▶");
+        TextView info = findViewById(R.id.tvClipInfo);
+        int index = currentIndex();
+        if (info != null && index >= 0) info.setText("Clip " + (index + 1) + " / " + clips.size());
+    }
+
+    private String clock(long millis) {
+        long seconds = Math.max(0, millis / 1000L);
+        return String.format(Locale.ROOT, "%02d:%02d", seconds / 60L, seconds % 60L);
+    }
+
     private void refreshStrip() {
         if (strip == null) {
             return;
@@ -1844,7 +1888,7 @@ public class EditorActivity extends AppCompatActivity {
         b.setBackground(roundRect(0xFF1A1D23, 0xFF41444D, 1, 12));
         b.setElevation(dp(2));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                0, (int) (58 * d), 1f);
+                (int) (78 * d), (int) (60 * d));
         lp.setMargins((int) (4 * d), (int) (4 * d), (int) (4 * d), (int) (4 * d));
         b.setLayoutParams(lp);
         b.setOnClickListener(v -> action.run());
