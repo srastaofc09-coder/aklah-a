@@ -973,7 +973,8 @@ public class EditorActivity extends AppCompatActivity {
                 "Unmute All Clips", "First Clip", "Next Clip", "ADVANCED CLIP LAB",
                 "Duplicate Clip × N", "Move Clip to Start", "Move Clip to End", "Keep Selected Only",
                 "Set All Clip Speed", "Copy Transition to All", "Reset All Clip Visuals", "Set All Clip Volume", "Copy Visual Grade to All",
-                "Copy Audio Treatment to All", "Set All Clips Opacity"
+                "Copy Audio Treatment to All", "Set All Clips Opacity",
+                "Set All Clips Rotation", "Set All Clips Crop", "Toggle All Horizontal Flip", "Toggle All Vertical Flip"
         };
         final String[] subtitles = {
                 "Copy selected overlay", "Cycle left / center / right",
@@ -984,10 +985,11 @@ public class EditorActivity extends AppCompatActivity {
                 "Create multiple copies", "Reorder selected clip", "Reorder selected clip", "Remove other clips",
                 "Set speed for every video clip", "Use selected clip's transition everywhere",
                 "Clear visual edits across the project", "Set shared volume for all clips",
-                "Copy color/filter/blur settings", "Copy fades/voice/audio settings", "Set opacity for every clip"
+                "Copy color/filter/blur settings", "Copy fades/voice/audio settings", "Set opacity for every clip",
+                "Apply rotation to every clip", "Set canvas crop for every clip", "Flip every clip left/right", "Flip every clip up/down"
         };
-        final String[] icons = {"⧉", "↔", "◷", "◴", "⟲", "⇄", "🔇", "🔊", "⏮", "⏭", "✦", "⧉×", "⇤", "⇥", "✓", "⏩", "↔", "◌", "🔉", "🎨", "🎚", "◐"};
-        final int[] actions = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21};
+        final String[] icons = {"⧉", "↔", "◷", "◴", "⟲", "⇄", "🔇", "🔊", "⏮", "⏭", "✦", "⧉×", "⇤", "⇥", "✓", "⏩", "↔", "◌", "🔉", "🎨", "🎚", "◐", "⟳", "▣", "↔", "↕"};
+        final int[] actions = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25};
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -2157,7 +2159,52 @@ public class EditorActivity extends AppCompatActivity {
             case 19: copySelectedVisualGradeToAll(); break;
             case 20: copySelectedAudioTreatmentToAll(); break;
             case 21: setAllClipOpacity(); break;
+            case 22: setAllClipRotation(); break;
+            case 23: setAllClipCrop(); break;
+            case 24: toggleAllClipFlip(true); break;
+            case 25: toggleAllClipFlip(false); break;
         }
+    }
+
+    private void setAllClipRotation() {
+        if (clips.isEmpty()) { toast("Timeline mein clips nahi hain"); return; }
+        final String[] choices = {"0°", "90° clockwise", "180°", "270° clockwise"};
+        new AlertDialog.Builder(this).setTitle("Set Rotation for All Clips")
+                .setItems(choices, (d, which) -> {
+                    pushUndo();
+                    int degrees = which * 90;
+                    for (ClipItem clip : clips) clip.rotationDegrees = degrees;
+                    saveProject(false); refreshStrip();
+                    toast("All clips rotation: " + degrees + "°");
+                }).setNegativeButton("Cancel", null).show();
+    }
+
+    private void setAllClipCrop() {
+        if (clips.isEmpty()) { toast("Timeline mein clips nahi hain"); return; }
+        final String[] choices = {"Original", "9:16 Vertical", "1:1 Square", "16:9 Landscape"};
+        new AlertDialog.Builder(this).setTitle("Set Crop for All Clips")
+                .setItems(choices, (d, which) -> {
+                    pushUndo();
+                    for (ClipItem clip : clips) clip.cropMode = which;
+                    saveProject(false); refreshStrip();
+                    toast("All clips crop preset updated");
+                }).setNegativeButton("Cancel", null).show();
+    }
+
+    private void toggleAllClipFlip(boolean horizontal) {
+        if (clips.isEmpty()) { toast("Timeline mein clips nahi hain"); return; }
+        boolean turnOn = false;
+        for (ClipItem clip : clips) {
+            if (horizontal ? !clip.flipX : !clip.flipY) { turnOn = true; break; }
+        }
+        pushUndo();
+        for (ClipItem clip : clips) {
+            if (horizontal) clip.flipX = turnOn;
+            else clip.flipY = turnOn;
+        }
+        saveProject(false); refreshStrip();
+        toast(horizontal ? (turnOn ? "All clips horizontally flipped" : "All clips horizontal flip reset")
+                : (turnOn ? "All clips vertically flipped" : "All clips vertical flip reset"));
     }
 
     private void copySelectedVisualGradeToAll() {
