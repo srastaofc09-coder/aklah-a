@@ -2024,7 +2024,7 @@ public class EditorActivity extends AppCompatActivity {
                 .setPositiveButton("Save", (d, w) -> {
                     pushUndo();
                     track.volume = volume.getProgress() / 100f;
-                    track.trimStartMs = sourceStart.getProgress() * sourceDurationMs / 1000L;
+                    track.trimStartMs = sourceStart.getProgress() * sourceDurationMs / 999L;
                     track.trimEndMs = sourceEnd.getProgress() * sourceDurationMs / 1000L;
                     if (track.trimEndMs <= track.trimStartMs) {
                         track.trimEndMs = Math.min(sourceDurationMs, track.trimStartMs + 100L);
