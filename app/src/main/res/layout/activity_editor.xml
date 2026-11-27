@@ -152,7 +152,6 @@
         android:id="@+id/timelineLayerStrip"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:maxHeight="96dp"
         android:orientation="vertical"
         android:background="#0D0F14"
         android:paddingHorizontal="4dp"
