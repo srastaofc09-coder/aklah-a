@@ -142,8 +142,10 @@ public class EditorActivity extends AppCompatActivity {
         timelineSeek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
                 if (fromUser && player != null) {
-                    long duration = player.getDuration();
-                    if (duration > 0 && duration != C.TIME_UNSET) player.seekTo((duration * progress) / 1000L);
+                    long duration = totalTimelineDurationMs();
+                    if (duration > 0L && duration != C.TIME_UNSET) {
+                        seekTimelineToMs(duration * progress / 1000L);
+                    }
                 }
             }
             @Override public void onStartTrackingTouch(SeekBar bar) { }
@@ -2118,16 +2120,51 @@ public class EditorActivity extends AppCompatActivity {
         refresh[0].run();
     }
 
+    private long totalTimelineDurationMs() {
+        if (player == null) return C.TIME_UNSET;
+        Timeline timeline = player.getCurrentTimeline();
+        if (timeline.isEmpty()) return C.TIME_UNSET;
+        long total = 0L;
+        Timeline.Window window = new Timeline.Window();
+        for (int i = 0; i < timeline.getWindowCount(); i++) {
+            timeline.getWindow(i, window);
+            long duration = window.getDurationMs();
+            if (duration == C.TIME_UNSET || duration < 0L) return C.TIME_UNSET;
+            if (Long.MAX_VALUE - total < duration) return C.TIME_UNSET;
+            total += duration;
+        }
+        return total;
+    }
+
+    private void seekTimelineToMs(long targetMs) {
+        if (player == null) return;
+        Timeline timeline = player.getCurrentTimeline();
+        if (timeline.isEmpty()) return;
+        Timeline.Window window = new Timeline.Window();
+        long remaining = Math.max(0L, targetMs);
+        int lastIndex = timeline.getWindowCount() - 1;
+        for (int i = 0; i < timeline.getWindowCount(); i++) {
+            timeline.getWindow(i, window);
+            long duration = window.getDurationMs();
+            if (duration == C.TIME_UNSET || duration < 0L) return;
+            if (remaining < duration || i == lastIndex) {
+                player.seekTo(i, Math.min(remaining, duration));
+                return;
+            }
+            remaining -= duration;
+        }
+    }
+
     private void updateTimelineUi() {
         if (player == null) return;
-        long pos = Math.max(0, player.getCurrentPosition());
-        long dur = player.getDuration();
+        long pos = Math.max(0L, timelineMs());
+        long dur = totalTimelineDurationMs();
         TextView current = findViewById(R.id.tvPlayheadTime);
         TextView total = findViewById(R.id.tvTotalTime);
         SeekBar seek = findViewById(R.id.timelineSeek);
         if (current != null) current.setText(clock(pos));
-        if (total != null) total.setText(dur > 0 && dur != C.TIME_UNSET ? clock(dur) : "00:00");
-        if (seek != null && dur > 0 && dur != C.TIME_UNSET && !seek.isPressed())
+        if (total != null) total.setText(dur > 0L && dur != C.TIME_UNSET ? clock(dur) : "00:00");
+        if (seek != null && dur > 0L && dur != C.TIME_UNSET && !seek.isPressed())
             seek.setProgress((int) Math.min(1000L, pos * 1000L / dur));
         TextView play = findViewById(R.id.btnPlayPause);
         if (play != null) play.setText(player.isPlaying() ? "Ⅱ" : "▶");
