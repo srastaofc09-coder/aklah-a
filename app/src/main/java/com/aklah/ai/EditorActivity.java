@@ -970,17 +970,19 @@ public class EditorActivity extends AppCompatActivity {
         final String[] titles = {
                 "Duplicate Text", "Text Alignment", "Text Start", "Text End",
                 "Reset Clip Trim", "Reverse Timeline", "Mute All Clips",
-                "Unmute All Clips", "First Clip", "Next Clip", "ADVANCED CLIP LAB"
+                "Unmute All Clips", "First Clip", "Next Clip", "ADVANCED CLIP LAB",
+                "Duplicate Clip × N", "Move Clip to Start", "Move Clip to End", "Keep Selected Only"
         };
         final String[] subtitles = {
                 "Copy selected overlay", "Cycle left / center / right",
                 "Start overlay at playhead", "End overlay at playhead",
                 "Restore full clip", "Reverse clip order",
                 "Turn off clip audio", "Restore clip audio",
-                "Jump to beginning", "Move to next clip", "Rotate • crop • speed • color"
+                "Jump to beginning", "Move to next clip", "Rotate • crop • speed • color",
+                "Create multiple copies", "Reorder selected clip", "Reorder selected clip", "Remove other clips"
         };
-        final String[] icons = {"⧉", "↔", "◷", "◴", "⟲", "⇄", "🔇", "🔊", "⏮", "⏭", "✦"};
-        final int[] actions = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+        final String[] icons = {"⧉", "↔", "◷", "◴", "⟲", "⇄", "🔇", "🔊", "⏮", "⏭", "✦", "⧉×", "⇤", "⇥", "✓"};
+        final int[] actions = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
