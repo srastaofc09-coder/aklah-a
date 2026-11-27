@@ -1924,6 +1924,7 @@ public class EditorActivity extends AppCompatActivity {
             return;
         }
         strip.removeAllViews();
+        renderTimelineLayerLanes();
         int cur = player == null ? 0 : player.getCurrentMediaItemIndex();
         float d = getResources().getDisplayMetrics().density;
         for (int i = 0; i < clips.size(); i++) {
@@ -1947,6 +1948,88 @@ public class EditorActivity extends AppCompatActivity {
                 }
             });
             strip.addView(t);
+        }
+    }
+
+    // Compact independent layer lanes for music and text overlays.
+    // These lanes expose existing project layers and open their real editors.
+    private void renderTimelineLayerLanes() {
+        LinearLayout lanes = findViewById(R.id.timelineLayerStrip);
+        if (lanes == null) return;
+        lanes.removeAllViews();
+        float d = getResources().getDisplayMetrics().density;
+
+        TextView audioLabel = new TextView(this);
+        audioLabel.setText("♫ AUDIO");
+        audioLabel.setTextColor(0xFF8ED8C1);
+        audioLabel.setTextSize(10);
+        audioLabel.setGravity(Gravity.CENTER);
+        audioLabel.setPadding(dp(8), 0, dp(8), 0);
+        lanes.addView(audioLabel, new LinearLayout.LayoutParams(dp(64), dp(42)));
+
+        TextView addAudio = new TextView(this);
+        addAudio.setText("+ Music");
+        addAudio.setTextColor(0xFF8ED8C1);
+        addAudio.setTextSize(11);
+        addAudio.setGravity(Gravity.CENTER);
+        addAudio.setBackground(roundRect(0xFF16312B, 0xFF32665A, 1, 9));
+        LinearLayout.LayoutParams addLp = new LinearLayout.LayoutParams(dp(68), dp(38));
+        addLp.setMargins(dp(3), 0, dp(5), 0);
+        lanes.addView(addAudio, addLp);
+        addAudio.setOnClickListener(v -> manageAudioTracks());
+
+        for (int i = 0; i < project.audioTracks.size(); i++) {
+            final AudioTrackItem track = project.audioTracks.get(i);
+            TextView block = new TextView(this);
+            block.setText("♫ Music " + (i + 1) + "\n" + sec(track.startMs)
+                    + "  •  " + Math.round(track.volume * 100f) + "%"
+                    + (track.muted ? " MUTE" : ""));
+            block.setTextColor(0xFFE0FFF4);
+            block.setTextSize(10);
+            block.setGravity(Gravity.CENTER);
+            block.setBackground(roundRect(track.muted ? 0xFF292D32 : 0xFF174238, 0xFF3E8876, 1, 8));
+            int width = (int) Math.max(dp(96), Math.min(dp(240), dp(96) + track.startMs / 1000f * dp(8)));
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(width, dp(38));
+            lp.setMargins(dp(3), 0, dp(3), 0);
+            lanes.addView(block, lp);
+            block.setOnClickListener(v -> editAudioTrack(track));
+        }
+
+        TextView textLabel = new TextView(this);
+        textLabel.setText("T TEXT");
+        textLabel.setTextColor(0xFFFFD66B);
+        textLabel.setTextSize(10);
+        textLabel.setGravity(Gravity.CENTER);
+        textLabel.setPadding(dp(8), 0, dp(8), 0);
+        lanes.addView(textLabel, new LinearLayout.LayoutParams(dp(54), dp(42)));
+
+        TextView addTextBlock = new TextView(this);
+        addTextBlock.setText("+ Text");
+        addTextBlock.setTextColor(0xFFFFD66B);
+        addTextBlock.setTextSize(11);
+        addTextBlock.setGravity(Gravity.CENTER);
+        addTextBlock.setBackground(roundRect(0xFF352A15, 0xFF8D7133, 1, 9));
+        LinearLayout.LayoutParams textAddLp = new LinearLayout.LayoutParams(dp(64), dp(38));
+        textAddLp.setMargins(dp(3), 0, dp(5), 0);
+        lanes.addView(addTextBlock, textAddLp);
+        addTextBlock.setOnClickListener(v -> addText());
+
+        for (int i = 0; i < texts.size(); i++) {
+            final TextLayer layer = texts.get(i);
+            TextView block = new TextView(this);
+            String value = layer.text == null ? "Text" : layer.text.replace("\n", " ");
+            if (value.length() > 14) value = value.substring(0, 14) + "…";
+            block.setText("T " + value + "\n" + sec(layer.startMs) + " → "
+                    + (layer.endMs < 0 ? "end" : sec(layer.endMs)));
+            block.setTextColor(0xFFFFF1C6);
+            block.setTextSize(10);
+            block.setGravity(Gravity.CENTER);
+            block.setBackground(roundRect(0xFF3A2D16, 0xFFB18A3C, 1, 8));
+            int width = (int) Math.max(dp(88), Math.min(dp(220), dp(88) + Math.max(0, layer.startMs) / 1000f * dp(8)));
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(width, dp(38));
+            lp.setMargins(dp(3), 0, dp(3), 0);
+            lanes.addView(block, lp);
+            block.setOnClickListener(v -> chooseTextToEdit());
         }
     }
 
