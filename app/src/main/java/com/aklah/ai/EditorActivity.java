@@ -2408,9 +2408,7 @@ public class EditorActivity extends AppCompatActivity {
             lp.setMargins(offset, 0, dp(5), 0);
             audioContent.addView(block, lp);
             block.setOnClickListener(v -> editAudioTrack(track));
-            installTimelineDrag(block, delta -> {
-                track.startMs = Math.max(0L, track.startMs + delta);
-            });
+            installAudioTimelineGesture(block, track);
         }
 
         LinearLayout textContent = addTimelineLane(lanes, "T TEXT", 0xFFFFD66B,
@@ -2570,6 +2568,77 @@ public class EditorActivity extends AppCompatActivity {
                     refreshStrip();
                     toast(gesture[0] == 1 ? "Text start trimmed"
                             : gesture[0] == 2 ? "Text duration trimmed" : "Text layer moved");
+                    return true;
+                case MotionEvent.ACTION_CANCEL:
+                    view.setTranslationX(0f);
+                    view.setAlpha(1f);
+                    return true;
+                default:
+                    return true;
+            }
+        });
+    }
+
+    // Audio lane: center drag moves the track; left/right edges trim its source.
+    private void installAudioTimelineGesture(View block, AudioTrackItem track) {
+        final float[] downX = new float[1];
+        final float[] deltaX = new float[1];
+        final int[] gesture = new int[1]; // 0 move, 1 trim-in, 2 trim-out
+        final boolean[] moved = new boolean[1];
+        final int edgeWidth = dp(18);
+        block.setOnTouchListener((view, event) -> {
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    downX[0] = event.getRawX();
+                    deltaX[0] = 0f;
+                    moved[0] = false;
+                    gesture[0] = event.getX() <= edgeWidth ? 1
+                            : event.getX() >= view.getWidth() - edgeWidth ? 2 : 0;
+                    return true;
+                case MotionEvent.ACTION_MOVE:
+                    float dx = event.getRawX() - downX[0];
+                    if (Math.abs(dx) > dp(7)) moved[0] = true;
+                    if (moved[0]) {
+                        deltaX[0] = dx;
+                        view.setTranslationX(dx);
+                        view.setAlpha(0.82f);
+                    }
+                    return true;
+                case MotionEvent.ACTION_UP:
+                    view.setTranslationX(0f);
+                    view.setAlpha(1f);
+                    if (!moved[0]) {
+                        view.performClick();
+                        return true;
+                    }
+                    float density = getResources().getDisplayMetrics().density;
+                    long deltaMs = Math.round((deltaX[0] / density)
+                            / Math.max(1f, 32f * timelineZoom) * 1000f);
+                    long sourceDuration = getMediaDurationMs(track.uri);
+                    long oldStart = Math.max(0L, track.trimStartMs);
+                    long oldEnd = track.trimEndMs > oldStart ? track.trimEndMs
+                            : sourceDuration > oldStart ? sourceDuration : oldStart + 1000L;
+                    pushUndo();
+                    if (gesture[0] == 1) {
+                        long newStart = Math.max(0L, Math.min(oldEnd - 300L,
+                                oldStart + deltaMs));
+                        long actualDelta = newStart - oldStart;
+                        track.trimStartMs = newStart;
+                        track.trimEndMs = oldEnd;
+                        track.startMs = Math.max(0L, track.startMs + actualDelta);
+                    } else if (gesture[0] == 2) {
+                        long newEnd = Math.max(oldStart + 300L, oldEnd + deltaMs);
+                        if (sourceDuration > 0L) newEnd = Math.min(sourceDuration, newEnd);
+                        track.trimStartMs = oldStart;
+                        track.trimEndMs = newEnd;
+                    } else {
+                        track.startMs = Math.max(0L, track.startMs + deltaMs);
+                    }
+                    saveProject(false);
+                    renderTimelineLayerLanes();
+                    refreshStrip();
+                    toast(gesture[0] == 1 ? "Audio start trim updated"
+                            : gesture[0] == 2 ? "Audio end trim updated" : "Audio track moved");
                     return true;
                 case MotionEvent.ACTION_CANCEL:
                     view.setTranslationX(0f);
