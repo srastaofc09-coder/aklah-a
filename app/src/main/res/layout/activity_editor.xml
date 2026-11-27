@@ -148,19 +148,15 @@
             android:orientation="horizontal"/>
     </HorizontalScrollView>
 
-    <HorizontalScrollView
+    <LinearLayout
+        android:id="@+id/timelineLayerStrip"
         android:layout_width="match_parent"
-        android:layout_height="54dp"
-        android:scrollbars="horizontal"
-        android:paddingHorizontal="6dp"
-        android:background="#0D0F14">
-        <LinearLayout
-            android:id="@+id/timelineLayerStrip"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"/>
-    </HorizontalScrollView>
+        android:layout_height="wrap_content"
+        android:maxHeight="96dp"
+        android:orientation="vertical"
+        android:background="#0D0F14"
+        android:paddingHorizontal="4dp"
+        android:paddingVertical="2dp"/>
 
     <LinearLayout
         android:layout_width="match_parent"
