@@ -2284,6 +2284,7 @@ public class EditorActivity extends AppCompatActivity {
         if (overlay == null) {
             return;
         }
+        applyPreviewMotion();
         float[] r = videoRect();
         int mw = (int) (r[2] * 0.9f);
         long t = timelineMs();
@@ -2300,6 +2301,36 @@ public class EditorActivity extends AppCompatActivity {
                 tv.setY(r[1] + l.yFrac * r[3] - tv.getHeight() / 2f);
             }
         }
+    }
+
+    // Preview keyframe motion mirrors the scale, position and rotation curve used by MP4 export.
+    private void applyPreviewMotion() {
+        int index = currentIndex();
+        if (player == null || index < 0 || index >= clips.size()) return;
+        ClipItem c = clips.get(index);
+        View video = findViewById(R.id.playerView);
+        View textLayer = findViewById(R.id.textOverlay);
+        if (video == null || textLayer == null) return;
+        long timeMs = Math.max(0L, player.getCurrentPosition());
+        long startMs = Math.max(0L, c.keyStartMs);
+        long endMs = Math.max(startMs + 1L, c.keyEndMs);
+        float p = Math.max(0f, Math.min(1f, (timeMs - startMs) / (float)(endMs - startMs)));
+        switch (c.keyEasing) {
+            case 1: p = p * p; break;
+            case 2: p = 1f - (1f - p) * (1f - p); break;
+            case 3: p = p * p * (3f - 2f * p); break;
+            default: break;
+        }
+        float scale = c.keyStartScale + (c.keyEndScale - c.keyStartScale) * p;
+        float x = c.keyStartX + (c.keyEndX - c.keyStartX) * p;
+        float y = c.keyStartY + (c.keyEndY - c.keyStartY) * p;
+        float rotation = c.keyStartRotation + (c.keyEndRotation - c.keyStartRotation) * p;
+        float tx = (x - 0.5f) * video.getWidth();
+        float ty = (y - 0.5f) * video.getHeight();
+        video.setScaleX(scale); video.setScaleY(scale);
+        video.setTranslationX(tx); video.setTranslationY(ty); video.setRotation(rotation);
+        textLayer.setScaleX(scale); textLayer.setScaleY(scale);
+        textLayer.setTranslationX(tx); textLayer.setTranslationY(ty); textLayer.setRotation(rotation);
     }
 
     // ---------- Save / Export ----------
