@@ -1659,6 +1659,11 @@ public class EditorActivity extends AppCompatActivity {
                 "Pull Back Reveal", "Pan Left to Right", "Pan Right to Left",
                 "Pan Bottom to Top", "Pan Top to Bottom",
                 "Diagonal Drift", "Ken Burns (Zoom + Pan)",
+                "Vertical Zoom In", "Vertical Zoom Out",
+                "Diagonal Pan Up-Left", "Diagonal Pan Down-Right",
+                "Tilt Left Reveal", "Tilt Right Reveal",
+                "Spin In", "Spin Out",
+                "Zoom + Rise", "Zoom + Drop",
                 "Reset Motion"
         };
         new AlertDialog.Builder(this).setTitle("MOTION PRESETS")
@@ -1713,9 +1718,54 @@ public class EditorActivity extends AppCompatActivity {
                             clip.keyStartX = 0.42f; clip.keyStartY = 0.58f;
                             clip.keyEndX = 0.58f; clip.keyEndY = 0.42f;
                             break;
+                        case 10: // Vertical zoom in
+                            clip.keyStartScale = 1.0f; clip.keyEndScale = 1.28f;
+                            clip.keyStartY = 0.62f; clip.keyEndY = 0.38f;
+                            break;
+                        case 11: // Vertical zoom out
+                            clip.keyStartScale = 1.28f; clip.keyEndScale = 1.0f;
+                            clip.keyStartY = 0.38f; clip.keyEndY = 0.62f;
+                            break;
+                        case 12: // Diagonal pan up-left
+                            clip.keyStartScale = 1.25f; clip.keyEndScale = 1.25f;
+                            clip.keyStartX = 0.64f; clip.keyStartY = 0.64f;
+                            clip.keyEndX = 0.36f; clip.keyEndY = 0.36f;
+                            break;
+                        case 13: // Diagonal pan down-right
+                            clip.keyStartScale = 1.25f; clip.keyEndScale = 1.25f;
+                            clip.keyStartX = 0.36f; clip.keyStartY = 0.36f;
+                            clip.keyEndX = 0.64f; clip.keyEndY = 0.64f;
+                            break;
+                        case 14: // Tilt left reveal
+                            clip.keyStartScale = 1.16f; clip.keyEndScale = 1.16f;
+                            clip.keyStartRotation = -8f; clip.keyEndRotation = 0f;
+                            clip.keyStartX = 0.44f; clip.keyEndX = 0.54f;
+                            break;
+                        case 15: // Tilt right reveal
+                            clip.keyStartScale = 1.16f; clip.keyEndScale = 1.16f;
+                            clip.keyStartRotation = 8f; clip.keyEndRotation = 0f;
+                            clip.keyStartX = 0.56f; clip.keyEndX = 0.46f;
+                            break;
+                        case 16: // Spin in
+                            clip.keyStartScale = 1.35f; clip.keyEndScale = 1.0f;
+                            clip.keyStartRotation = -18f; clip.keyEndRotation = 0f;
+                            break;
+                        case 17: // Spin out
+                            clip.keyStartScale = 1.0f; clip.keyEndScale = 1.35f;
+                            clip.keyStartRotation = 0f; clip.keyEndRotation = 18f;
+                            break;
+                        case 18: // Zoom + rise
+                            clip.keyStartScale = 1.0f; clip.keyEndScale = 1.25f;
+                            clip.keyStartY = 0.62f; clip.keyEndY = 0.40f;
+                            break;
+                        case 19: // Zoom + drop
+                            clip.keyStartScale = 1.0f; clip.keyEndScale = 1.25f;
+                            clip.keyStartY = 0.38f; clip.keyEndY = 0.60f;
+                            break;
                         default:
                             clip.keyStartMs = 0L; clip.keyEndMs = 1000L;
                             clip.keyEasing = 0;
+                            clip.keyStartRotation = 0f; clip.keyEndRotation = 0f;
                             break;
                     }
                     saveProject(false);
