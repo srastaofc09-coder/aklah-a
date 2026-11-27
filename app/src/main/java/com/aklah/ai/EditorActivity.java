@@ -972,7 +972,8 @@ public class EditorActivity extends AppCompatActivity {
                 "Reset Clip Trim", "Reverse Timeline", "Mute All Clips",
                 "Unmute All Clips", "First Clip", "Next Clip", "ADVANCED CLIP LAB",
                 "Duplicate Clip × N", "Move Clip to Start", "Move Clip to End", "Keep Selected Only",
-                "Set All Clip Speed", "Copy Transition to All", "Reset All Clip Visuals", "Set All Clip Volume"
+                "Set All Clip Speed", "Copy Transition to All", "Reset All Clip Visuals", "Set All Clip Volume", "Copy Visual Grade to All",
+                "Copy Audio Treatment to All", "Set All Clips Opacity"
         };
         final String[] subtitles = {
                 "Copy selected overlay", "Cycle left / center / right",
@@ -982,10 +983,11 @@ public class EditorActivity extends AppCompatActivity {
                 "Jump to beginning", "Move to next clip", "Rotate • crop • speed • color",
                 "Create multiple copies", "Reorder selected clip", "Reorder selected clip", "Remove other clips",
                 "Set speed for every video clip", "Use selected clip's transition everywhere",
-                "Clear visual edits across the project", "Set shared volume for all clips"
+                "Clear visual edits across the project", "Set shared volume for all clips",
+                "Copy color/filter/blur settings", "Copy fades/voice/audio settings", "Set opacity for every clip"
         };
-        final String[] icons = {"⧉", "↔", "◷", "◴", "⟲", "⇄", "🔇", "🔊", "⏮", "⏭", "✦", "⧉×", "⇤", "⇥", "✓", "⏩", "↔", "◌", "🔉"};
-        final int[] actions = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18};
+        final String[] icons = {"⧉", "↔", "◷", "◴", "⟲", "⇄", "🔇", "🔊", "⏮", "⏭", "✦", "⧉×", "⇤", "⇥", "✓", "⏩", "↔", "◌", "🔉", "🎨", "🎚", "◐"};
+        final int[] actions = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21};
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -2152,7 +2154,57 @@ public class EditorActivity extends AppCompatActivity {
             case 16: copySelectedTransitionToAll(); break;
             case 17: resetAllClipVisuals(); break;
             case 18: setAllClipVolume(); break;
+            case 19: copySelectedVisualGradeToAll(); break;
+            case 20: copySelectedAudioTreatmentToAll(); break;
+            case 21: setAllClipOpacity(); break;
         }
+    }
+
+    private void copySelectedVisualGradeToAll() {
+        ClipItem source = selectedClip();
+        if (source == null || clips.isEmpty()) { toast("Pehle clip select karein"); return; }
+        pushUndo();
+        for (ClipItem target : clips) {
+            target.brightness = source.brightness; target.contrast = source.contrast;
+            target.saturation = source.saturation; target.filterStrength = source.filterStrength;
+            target.redScale = source.redScale; target.greenScale = source.greenScale;
+            target.blueScale = source.blueScale; target.blurSigma = source.blurSigma;
+        }
+        saveProject(false); refreshStrip();
+        toast("Selected clip ka color/filter grade sabhi clips par copy hua");
+    }
+
+    private void copySelectedAudioTreatmentToAll() {
+        ClipItem source = selectedClip();
+        if (source == null || clips.isEmpty()) { toast("Pehle clip select karein"); return; }
+        pushUndo();
+        for (ClipItem target : clips) {
+            target.volume = source.volume; target.fadeInMs = source.fadeInMs;
+            target.fadeOutMs = source.fadeOutMs; target.voicePitch = source.voicePitch;
+            target.voiceEnhancer = source.voiceEnhancer;
+        }
+        saveProject(false); applyCurrentClipAudio(); refreshStrip();
+        toast("Selected clip ka audio treatment sabhi clips par copy hua");
+    }
+
+    private void setAllClipOpacity() {
+        if (clips.isEmpty()) return;
+        SeekBar seek = new SeekBar(this); seek.setMax(100); seek.setProgress(100);
+        TextView label = new TextView(this); label.setText("Opacity: 100%");
+        seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            public void onProgressChanged(SeekBar b,int value,boolean fromUser) { label.setText("Opacity: "+value+"%"); }
+            public void onStartTrackingTouch(SeekBar b) {}
+            public void onStopTrackingTouch(SeekBar b) {}
+        });
+        LinearLayout box = new LinearLayout(this); box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(16),dp(8),dp(16),dp(4)); box.addView(label); box.addView(seek);
+        new AlertDialog.Builder(this).setTitle("Set All Clips Opacity").setView(box)
+                .setNegativeButton("Cancel",null).setPositiveButton("Apply",(d,w)->{
+                    float opacity=seek.getProgress()/100f; pushUndo();
+                    for(ClipItem clip:clips) clip.opacity=opacity;
+                    saveProject(false); refreshStrip();
+                    toast("All clips opacity: "+seek.getProgress()+"%");
+                }).show();
     }
 
     private void setAllClipSpeed() {
