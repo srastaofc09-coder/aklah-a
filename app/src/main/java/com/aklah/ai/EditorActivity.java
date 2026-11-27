@@ -2202,8 +2202,11 @@ public class EditorActivity extends AppCompatActivity {
             boolean on = (i == cur);
             t.setBackgroundResource(on ? R.drawable.bg_button_gold : R.drawable.bg_card);
             t.setTextColor(on ? 0xFF000000 : 0xFFD4AF37);
+            long clipMs = Math.max(500L, clipDurationMs(c));
+            int clipWidth = (int) Math.max(dp(76), Math.min(dp(1200),
+                    clipMs / 1000f * dp(32f * timelineZoom)));
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                    (int) (110 * d * timelineZoom), (int) (56 * d));
+                    clipWidth, (int) (56 * d));
             lp.setMargins((int) (3 * d), 0, (int) (3 * d), 0);
             t.setLayoutParams(lp);
             t.setOnClickListener(v -> {
