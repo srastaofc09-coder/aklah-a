@@ -1223,7 +1223,18 @@ public class EditorActivity extends AppCompatActivity {
     }
 
     private long clipDurationMs(ClipItem c) {
-        return c.endMs > c.startMs ? c.endMs - c.startMs : 1000L;
+        if (c == null) return 1000L;
+        long sourceDuration = c.endMs > c.startMs
+                ? c.endMs - c.startMs : -1L;
+        if (sourceDuration <= 0L) {
+            long mediaDuration = getMediaDurationMs(c.uri);
+            if (mediaDuration > c.startMs) {
+                sourceDuration = mediaDuration - c.startMs;
+            }
+        }
+        if (sourceDuration <= 0L) sourceDuration = 1000L;
+        float speed = c.speed > 0.05f && Float.isFinite(c.speed) ? c.speed : 1f;
+        return Math.max(250L, Math.round(sourceDuration / speed));
     }
 
     private void showAdvancedClipTools() {
