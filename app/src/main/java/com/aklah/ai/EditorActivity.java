@@ -2239,7 +2239,8 @@ public class EditorActivity extends AppCompatActivity {
             int width = Math.max(dp(48), (int) (step * pixelsPerSecond));
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(width, dp(23));
             tick.setLayoutParams(lp);
-            tick.setOnClickListener(v -> seekTimelineToMs(sec * 1000L));
+            final long tickSeconds = sec;
+            tick.setOnClickListener(v -> seekTimelineToMs(tickSeconds * 1000L));
             ruler.addView(tick);
         }
     }
