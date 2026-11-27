@@ -236,7 +236,13 @@ public class ExportActivity extends AppCompatActivity {
             bitrate = 2000000;
         } else if (qId == R.id.rbHigh) {
             bitrate = 10000000;
+        } else if (qId == R.id.rbUltra) {
+            bitrate = 16000000;
         }
+
+        RadioGroup rgFps = findViewById(R.id.rgFrameRate);
+        int fpsId = rgFps.getCheckedRadioButtonId();
+        int frameRate = fpsId == R.id.rb60fps ? 60 : 30;
 
         List<EditedMediaItem> items = new ArrayList<>();
         for (ClipItem c : source) {
@@ -254,6 +260,9 @@ public class ExportActivity extends AppCompatActivity {
                     .build();
             EditedMediaItem.Builder eb = new EditedMediaItem.Builder(mi);
             eb.setRemoveAudio(c.muted);
+            // Media3 treats this as the output frame-rate ceiling for video sources.
+            // 60 fps cannot create extra motion frames when the source is 30 fps.
+            eb.setFrameRate(frameRate);
             List<Effect> video = new ArrayList<>();
             if (Math.abs(c.opacity - 1f) > 0.001f) {
                 video.add(new AlphaScale(Math.max(0f, Math.min(1f, c.opacity))));
@@ -620,7 +629,9 @@ public class ExportActivity extends AppCompatActivity {
         btnStart.setEnabled(false);
         btnShare.setVisibility(View.GONE);
         bar.setProgress(0);
-        tvStatus.setText("Export shuru... (screen on rakhein)");
+        tvStatus.setText("Export shuru... " + frameRate + " FPS cap • "
+                + (height > 0 ? height + "p" : "Original") + " • "
+                + (bitrate / 1000000) + " Mbps (screen on rakhein)");
         transformer.start(composition, outFile.getAbsolutePath());
         handler.post(poll);
     }

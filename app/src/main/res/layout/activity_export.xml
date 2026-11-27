@@ -96,7 +96,51 @@
                 android:layout_height="wrap_content"
                 android:text="High"
                 android:textColor="@color/white" />
+
+            <RadioButton
+                android:id="@+id/rbUltra"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Ultra"
+                android:textColor="@color/white" />
         </RadioGroup>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Frame Rate"
+            android:textColor="@color/grey_text" />
+
+        <RadioGroup
+            android:id="@+id/rgFrameRate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <RadioButton
+                android:id="@+id/rb30fps"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="30 FPS"
+                android:textColor="@color/white" />
+
+            <RadioButton
+                android:id="@+id/rb60fps"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Up to 60 FPS"
+                android:textColor="@color/white" />
+        </RadioGroup>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="60 FPS setting source video ko 60 FPS se zyada output nahi hone degi; 30 FPS source ko extra frames se convert nahi karti."
+            android:textColor="@color/grey_text"
+            android:textSize="12sp" />
 
         <ProgressBar
             android:id="@+id/progressBar"
