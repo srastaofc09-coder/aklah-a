@@ -471,6 +471,16 @@ public class ExportActivity extends AppCompatActivity {
                 video.add(Presentation.createForAspectRatio(1f, Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP));
             } else if (effectiveCanvasMode == 3) {
                 video.add(Presentation.createForAspectRatio(16f / 9f, Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP));
+            } else if (effectiveCanvasMode == 4) {
+                video.add(Presentation.createForAspectRatio(4f / 5f, Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP));
+            } else if (effectiveCanvasMode == 5) {
+                video.add(Presentation.createForAspectRatio(3f / 4f, Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP));
+            } else if (effectiveCanvasMode == 6) {
+                video.add(Presentation.createForAspectRatio(4f / 3f, Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP));
+            } else if (effectiveCanvasMode == 7) {
+                video.add(Presentation.createForAspectRatio(2.35f, Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP));
+            } else if (effectiveCanvasMode == 8) {
+                video.add(Presentation.createForAspectRatio(2f, Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP));
             }
             if (height > 0) video.add(Presentation.createForHeight(height));
             List<AudioProcessor> audio = new ArrayList<>();

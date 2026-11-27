@@ -1413,7 +1413,7 @@ public class EditorActivity extends AppCompatActivity {
     }
 
     private void chooseCanvasRatio() {
-        final String[] options = {"Original / Auto", "Portrait 9:16", "Square 1:1", "Landscape 16:9"};
+        final String[] options = {"Original / Auto", "Portrait 9:16", "Square 1:1", "Landscape 16:9", "Portrait 4:5", "Portrait 3:4", "Classic 4:3", "Cinematic 2.35:1", "Wide 2:1"};
         new AlertDialog.Builder(this)
                 .setTitle("PROJECT CANVAS RATIO")
                 .setSingleChoiceItems(options, Math.max(0, Math.min(3, project.canvasMode)), (dialog, which) -> {
@@ -1430,10 +1430,17 @@ public class EditorActivity extends AppCompatActivity {
 
     private float canvasAspectRatio() {
         if (project == null) return 0f;
-        if (project.canvasMode == 1) return 9f / 16f;
-        if (project.canvasMode == 2) return 1f;
-        if (project.canvasMode == 3) return 16f / 9f;
-        return 0f;
+        switch (project.canvasMode) {
+            case 1: return 9f / 16f;
+            case 2: return 1f;
+            case 3: return 16f / 9f;
+            case 4: return 4f / 5f;
+            case 5: return 3f / 4f;
+            case 6: return 4f / 3f;
+            case 7: return 2.35f;
+            case 8: return 2f;
+            default: return 0f;
+        }
     }
 
     private void applyPreviewCanvas() {
@@ -1467,7 +1474,7 @@ public class EditorActivity extends AppCompatActivity {
     }
 
     private void chooseCropMode(ClipItem clip) {
-        final String[] options = {"Original", "Vertical 9:16", "Square 1:1", "Landscape 16:9"};
+        final String[] options = {"Original", "Vertical 9:16", "Square 1:1", "Landscape 16:9", "Portrait 4:5", "Portrait 3:4", "Classic 4:3", "Cinematic 2.35:1", "Wide 2:1"};
         new AlertDialog.Builder(this)
                 .setTitle("Crop / Aspect Ratio")
                 .setSingleChoiceItems(options, clip.cropMode, (dialog, which) -> {
