@@ -38,14 +38,15 @@ import java.util.concurrent.Executors;
 public class AIStudioActivity extends AppCompatActivity {
     private static final String PREFS = "aklah_ai_settings";
     private static final String KEY = "groq_api_key";
+    private static final String POLLINATIONS_KEY = "pollinations_api_key";
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private final Handler main = new Handler(Looper.getMainLooper());
-    private EditText keyBox, promptBox;
+    private EditText keyBox, pollinationsKeyBox, promptBox;
     private TextView result, status;
     private ImageView image;
     private ProgressBar progress;
     private Button scriptBtn, storyBtn, imageBtn, videoBtn;
-    private String latestVideoBase64;
+    private byte[] latestVideoBytes;
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -70,13 +71,29 @@ public class AIStudioActivity extends AppCompatActivity {
         keyBox.setInputType(129);
         keyBox.setText(getSharedPreferences(PREFS, MODE_PRIVATE).getString(KEY, ""));
         body.addView(keyBox, lp(-1, dp(52), 0, 0, 0, 0));
-        Button save = button("Save API Key");
+        Button save = button("Save Groq API Key");
         save.setOnClickListener(v -> {
             getSharedPreferences(PREFS, MODE_PRIVATE).edit().putString(KEY,
                     keyBox.getText().toString().trim()).apply();
-            Toast.makeText(this, "Groq API key phone par save ho gayi", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Groq key phone par save ho gayi", Toast.LENGTH_SHORT).show();
         });
         body.addView(save);
+        pollinationsKeyBox = new EditText(this);
+        pollinationsKeyBox.setSingleLine(true);
+        pollinationsKeyBox.setTextColor(0xffffffff);
+        pollinationsKeyBox.setHintTextColor(0xff929bb0);
+        pollinationsKeyBox.setHint("Pollinations key (sk_...) for image/video");
+        pollinationsKeyBox.setInputType(129);
+        pollinationsKeyBox.setText(getSharedPreferences(PREFS, MODE_PRIVATE).getString(POLLINATIONS_KEY, ""));
+        body.addView(pollinationsKeyBox, lp(-1, dp(52), 0, dp(8), 0, 0));
+        Button savePollinations = button("Save Image / Video API Key");
+        savePollinations.setOnClickListener(v -> {
+            getSharedPreferences(PREFS, MODE_PRIVATE).edit().putString(POLLINATIONS_KEY,
+                    pollinationsKeyBox.getText().toString().trim()).apply();
+            toast("Pollinations key phone par save ho gayi");
+        });
+        body.addView(savePollinations);
+        body.addView(text("Free usage may be limited; check provider balance and key budget before generating.", 12, 0xffaab6d2, false));
         promptBox = new EditText(this);
         promptBox.setTextColor(0xffffffff);
         promptBox.setHintTextColor(0xff929bb0);
@@ -96,18 +113,18 @@ public class AIStudioActivity extends AppCompatActivity {
         promptBtn.setOnClickListener(v -> generateText("Transform this idea into a professional text-to-video prompt with subject, environment, action, camera movement, lighting, visual style, continuity, and negative constraints. Idea: "));
         body.addView(promptBtn);
         imageBtn = button("Generate AI Image / Thumbnail");
-        imageBtn.setOnClickListener(v -> toast("Groq text API image generate nahi karti. Image generation ke liye separate image provider chahiye."));
+        imageBtn.setOnClickListener(v -> generateImage());
         body.addView(imageBtn);
         videoBtn = button("Generate AI Video (6 sec)");
-        videoBtn.setOnClickListener(v -> toast("Groq text API video generate nahi karti. Video generation ke liye separate video provider chahiye."));
+        videoBtn.setOnClickListener(v -> generateVideo());
         body.addView(videoBtn);
         Button saveVideo = button("Save Generated Video");
-        saveVideo.setOnClickListener(v -> toast("Abhi Groq text AI connected hai; video generation provider alag se add karna hoga."));
+        saveVideo.setOnClickListener(v -> { if (latestVideoBytes == null) toast("Pehle AI video generate karo"); else { Uri saved = saveVideoBytes(latestVideoBytes); toast(saved == null ? "Video save nahi hui" : "Video Movies/AKLAH AI mein save ho gayi"); } });
         body.addView(saveVideo);
         progress = new ProgressBar(this);
         progress.setVisibility(View.GONE);
         body.addView(progress, lp(-2, dp(40), 0, dp(10), 0, 0));
-        status = text("Ready. Groq key text AI ke liye use hogi.", 13, 0xffaab6d2, false);
+        status = text("Groq = text AI • Pollinations = image/video (limited free credits)", 13, 0xffaab6d2, false);
         body.addView(status);
         image = new ImageView(this);
         image.setAdjustViewBounds(true);
@@ -143,6 +160,74 @@ public class AIStudioActivity extends AppCompatActivity {
             String value = message == null ? "" : message.optString("content", "").trim();
             main.post(() -> result.setText(value.isEmpty() ? "Empty response" : value));
         });
+    }
+
+    private void generateImage() {
+        String prompt = promptBox.getText().toString().trim();
+        if (prompt.isEmpty()) { toast("Pehle image ka prompt likho"); return; }
+        runTask("Pollinations AI image generate ho rahi hai...", () -> {
+            String key = pollinationsKey();
+            String url = "https://gen.pollinations.ai/image/" + java.net.URLEncoder.encode(prompt, "UTF-8")
+                    + "?model=black-forest-labs/flux.1-schnell&width=1024&height=1024&safe=true";
+            byte[] bytes = fetchMedia(url, key, 180000);
+            Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+            if (bitmap == null) throw new Exception("Image response decode nahi hui");
+            Uri saved = saveImageBytes(bytes, "image/jpeg");
+            main.post(() -> {
+                image.setImageBitmap(bitmap);
+                result.setText(saved == null ? "Image generated. Save failed." : "Image generated and saved: " + saved);
+            });
+        });
+    }
+
+    private void generateVideo() {
+        String prompt = promptBox.getText().toString().trim();
+        if (prompt.isEmpty()) { toast("Pehle video ka prompt likho"); return; }
+        runTask("Pollinations AI video generate ho rahi hai; kuch waqt lag sakta hai...", () -> {
+            String key = pollinationsKey();
+            String url = "https://gen.pollinations.ai/video/" + java.net.URLEncoder.encode(prompt, "UTF-8")
+                    + "?model=google/veo-3.1-fast&duration=6&safe=true";
+            byte[] bytes = fetchMedia(url, key, 300000);
+            if (bytes.length < 1000) throw new Exception("Video response bahut chhoti/invalid hai");
+            latestVideoBytes = bytes;
+            main.post(() -> result.setText("AI video generated (" + (bytes.length / 1024) + " KB). Tap Save Generated Video."));
+        });
+    }
+
+    private String pollinationsKey() throws Exception {
+        String key = pollinationsKeyBox.getText().toString().trim();
+        if (key.isEmpty()) key = getSharedPreferences(PREFS, MODE_PRIVATE).getString(POLLINATIONS_KEY, "");
+        if (key == null || key.trim().isEmpty()) throw new Exception("Pollinations API key save karo (sk_...)");
+        return key.trim();
+    }
+
+    private byte[] fetchMedia(String url, String key, int timeout) throws Exception {
+        HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+        connection.setRequestMethod("GET");
+        connection.setConnectTimeout(30000);
+        connection.setReadTimeout(timeout);
+        connection.setRequestProperty("Authorization", "Bearer " + key);
+        connection.setRequestProperty("Accept", "*/*");
+        int code = connection.getResponseCode();
+        InputStream stream = code >= 200 && code < 300 ? connection.getInputStream() : connection.getErrorStream();
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        if (stream != null) {
+            byte[] buffer = new byte[16384]; int n;
+            while ((n = stream.read(buffer)) != -1) bytes.write(buffer, 0, n);
+            stream.close();
+        }
+        String type = connection.getContentType();
+        byte[] data = bytes.toByteArray();
+        connection.disconnect();
+        if (code < 200 || code >= 300) {
+            String error = new String(data, "UTF-8");
+            throw new Exception("Pollinations API " + code + ": " + (error.length() > 600 ? error.substring(0, 600) : error));
+        }
+        if (type != null && type.toLowerCase().contains("json")) {
+            String response = new String(data, "UTF-8");
+            throw new Exception("Provider returned JSON instead of media: " + (response.length() > 500 ? response.substring(0, 500) : response));
+        }
+        return data;
     }
 
     private JSONObject postGroq(JSONObject body) throws Exception {
