@@ -76,6 +76,22 @@ public class TextDialog {
         final int[] textColor = {layer.color};
         root.addView(swatches(ctx, TEXT_COLORS, textColor));
 
+        root.addView(label(ctx, "Text opacity / transparency: " + Math.round(layer.opacity * 100f / 255f) + "%"));
+        final TextView opacityLabel = (TextView) root.getChildAt(root.getChildCount() - 1);
+        final SeekBar opacityBar = new SeekBar(ctx);
+        opacityBar.setMax(255);
+        opacityBar.setProgress(Math.max(0, Math.min(255, layer.opacity)));
+        opacityBar.setThumbTintList(ColorStateList.valueOf(GOLD));
+        opacityBar.setProgressTintList(ColorStateList.valueOf(GOLD));
+        opacityBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar s, int p, boolean fromUser) {
+                opacityLabel.setText("Text opacity / transparency: " + Math.round(p * 100f / 255f) + "%");
+            }
+            @Override public void onStartTrackingTouch(SeekBar s) {}
+            @Override public void onStopTrackingTouch(SeekBar s) {}
+        });
+        root.addView(opacityBar);
+
         root.addView(label(ctx, "Text Outline / Stroke"));
         final CheckBox cbStroke = checkbox(ctx, "Outline enable karein", layer.strokeWidth > 0f);
         root.addView(cbStroke);
@@ -228,6 +244,7 @@ public class TextDialog {
             }
             layer.text = t;
             layer.color = textColor[0];
+            layer.opacity = opacityBar.getProgress();
             layer.strokeColor = strokeColor[0];
             layer.strokeWidth = cbStroke.isChecked() ? strokeBar.getProgress() : 0f;
             layer.bgColor = bgColor[0];

@@ -6,6 +6,7 @@ public class TextLayer {
     public long startMs = 0;
     public long endMs = -1; // -1 ka matlab video ke end tak
     public int color = 0xFFD4AF37;
+    public int opacity = 255;
     public int strokeColor = 0xFF000000;
     public float strokeWidth = 0f;
     public int bgColor = 0; // 0 ka matlab background nahi
@@ -28,6 +29,7 @@ public class TextLayer {
         t.startMs = startMs;
         t.endMs = endMs;
         t.color = color;
+        t.opacity = opacity;
         t.strokeColor = strokeColor;
         t.strokeWidth = strokeWidth;
         t.bgColor = bgColor;

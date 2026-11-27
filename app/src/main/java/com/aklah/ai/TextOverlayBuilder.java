@@ -97,6 +97,7 @@ public class TextOverlayBuilder {
         TextPaint paint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         paint.setTextSize(textPx);
         paint.setColor(l.color);
+        paint.setAlpha(Math.max(0, Math.min(255, l.opacity)));
         paint.setTypeface(l.bold ? Typeface.DEFAULT_BOLD : Typeface.DEFAULT);
         if (l.shadow) {
             paint.setShadowLayer(6f * scale, 2f * scale, 2f * scale, 0xFF000000);
@@ -147,6 +148,7 @@ public class TextOverlayBuilder {
             paint.setStrokeJoin(Paint.Join.ROUND);
             paint.setStrokeWidth(l.strokeWidth * scale);
             paint.setColor(l.strokeColor);
+            paint.setAlpha(Math.max(0, Math.min(255, l.opacity)));
             layout.draw(canvas);
             paint.setStyle(Paint.Style.FILL);
             paint.setColor(l.color);
