@@ -67,6 +67,9 @@ public class EditorActivity extends AppCompatActivity {
         int canvasMode;
         String photoOverlayUri;
         float photoOverlayX, photoOverlayY, photoOverlaySize, photoOverlayOpacity;
+        int photoOverlayBorderColor;
+        float photoOverlayBorderWidth, photoOverlayCornerRadius;
+        boolean photoOverlayShadow;
     }
     private final Deque<EditorSnapshot> undoStack = new ArrayDeque<>();
     private final Deque<EditorSnapshot> redoStack = new ArrayDeque<>();
@@ -248,6 +251,7 @@ public class EditorActivity extends AppCompatActivity {
         addButton(r7, "Photo Overlay / PIP", () -> choosePhotoOverlay());
         addButton(r7, "Remove Photo PIP", () -> removePhotoOverlay());
         addButton(r7, "PIP Position / Size", () -> showPhotoPipControls());
+        addButton(r7, "PIP Frame / Style", () -> showPhotoPipStyleControls());
         addButton(r7, "Audio Tracks", () -> manageAudioTracks());
         addButton(r7, "Voice-over REC", () -> toggleVoiceRecording());
         addButton(r7, "Keyframe / Transition", () -> showAdvancedManualBatch());
@@ -597,6 +601,10 @@ public class EditorActivity extends AppCompatActivity {
             state.photoOverlayY = project.photoOverlayY;
             state.photoOverlaySize = project.photoOverlaySize;
             state.photoOverlayOpacity = project.photoOverlayOpacity;
+            state.photoOverlayBorderColor = project.photoOverlayBorderColor;
+            state.photoOverlayBorderWidth = project.photoOverlayBorderWidth;
+            state.photoOverlayCornerRadius = project.photoOverlayCornerRadius;
+            state.photoOverlayShadow = project.photoOverlayShadow;
         }
         for (ClipItem clip : clips) state.clips.add(clip.copy());
         for (TextLayer layer : texts) state.texts.add(layer.copy());
@@ -620,6 +628,10 @@ public class EditorActivity extends AppCompatActivity {
             project.photoOverlayY = state.photoOverlayY;
             project.photoOverlaySize = state.photoOverlaySize;
             project.photoOverlayOpacity = state.photoOverlayOpacity;
+            project.photoOverlayBorderColor = state.photoOverlayBorderColor;
+            project.photoOverlayBorderWidth = state.photoOverlayBorderWidth;
+            project.photoOverlayCornerRadius = state.photoOverlayCornerRadius;
+            project.photoOverlayShadow = state.photoOverlayShadow;
             showPhotoOverlayPreview();
             project.audioTracks.clear();
             for (AudioTrackItem track : state.audioTracks) project.audioTracks.add(track.copy());
@@ -3104,6 +3116,13 @@ public class EditorActivity extends AppCompatActivity {
         photoOverlayPreview.setImageURI(Uri.parse(uri));
         photoOverlayPreview.setVisibility(View.VISIBLE);
         photoOverlayPreview.setAlpha(Math.max(0f, Math.min(1f, project.photoOverlayOpacity)));
+        android.graphics.drawable.GradientDrawable pipFrame = new android.graphics.drawable.GradientDrawable();
+        pipFrame.setColor(0x00000000);
+        pipFrame.setCornerRadius(dp(project.photoOverlayCornerRadius));
+        pipFrame.setStroke(dp(project.photoOverlayBorderWidth), project.photoOverlayBorderColor);
+        photoOverlayPreview.setBackground(pipFrame);
+        photoOverlayPreview.setClipToOutline(true);
+        photoOverlayPreview.setElevation(project.photoOverlayShadow ? dp(8) : 0);
         FrameLayout stage = findViewById(R.id.previewStage);
         if (stage != null) {
             int w = Math.max(dp(64), (int) (stage.getWidth() * project.photoOverlaySize));
@@ -3176,6 +3195,53 @@ public class EditorActivity extends AppCompatActivity {
                     } else {
                         pushUndo(); project.photoOverlayX = .82f; project.photoOverlayY = .78f;
                         project.photoOverlaySize = .28f; project.photoOverlayOpacity = 1f;
+                        showPhotoOverlayPreview(); saveProject(false);
+                    }
+                }).show();
+    }
+
+    private void showPhotoPipStyleControls() {
+        if (project == null || project.photoOverlayUri == null || project.photoOverlayUri.isEmpty()) {
+            toast("Pehle Photo Overlay / PIP add karein");
+            return;
+        }
+        final String[] choices = {"Frame color", "Frame thickness", "Corner roundness", "Toggle shadow", "Reset frame"};
+        new AlertDialog.Builder(this).setTitle("Photo PIP • Frame & Style")
+                .setItems(choices, (dialog, which) -> {
+                    if (which == 0) {
+                        final String[] colors = {"Gold", "White", "Black", "Red", "Green", "Blue", "No frame"};
+                        final int[] values = {0xFFFFD66B, 0xFFFFFFFF, 0xFF111111, 0xFFE53935, 0xFF43A047, 0xFF1E88E5, 0x00000000};
+                        new AlertDialog.Builder(this).setTitle("Frame color")
+                                .setItems(colors, (d, p) -> {
+                                    pushUndo(); project.photoOverlayBorderColor = values[p];
+                                    project.photoOverlayBorderWidth = p == 6 ? 0f : Math.max(2f, project.photoOverlayBorderWidth);
+                                    showPhotoOverlayPreview(); saveProject(false);
+                                }).show();
+                    } else if (which == 1) {
+                        final String[] widths = {"Thin", "Normal", "Bold", "Extra bold", "Off"};
+                        final float[] values = {2f, 4f, 7f, 11f, 0f};
+                        new AlertDialog.Builder(this).setTitle("Frame thickness")
+                                .setSingleChoiceItems(widths, 1, (d, p) -> {
+                                    pushUndo(); project.photoOverlayBorderWidth = values[p];
+                                    showPhotoOverlayPreview(); saveProject(false); d.dismiss();
+                                }).setNegativeButton("Cancel", null).show();
+                    } else if (which == 2) {
+                        final String[] radius = {"Square", "Soft", "Rounded", "Very rounded"};
+                        final float[] values = {0f, 12f, 28f, 48f};
+                        new AlertDialog.Builder(this).setTitle("Corner roundness")
+                                .setSingleChoiceItems(radius, 2, (d, p) -> {
+                                    pushUndo(); project.photoOverlayCornerRadius = values[p];
+                                    showPhotoOverlayPreview(); saveProject(false); d.dismiss();
+                                }).setNegativeButton("Cancel", null).show();
+                    } else if (which == 3) {
+                        pushUndo(); project.photoOverlayShadow = !project.photoOverlayShadow;
+                        showPhotoOverlayPreview(); saveProject(false);
+                        toast(project.photoOverlayShadow ? "PIP shadow on" : "PIP shadow off");
+                    } else {
+                        pushUndo(); project.photoOverlayBorderColor = 0xFFFFD66B;
+                        project.photoOverlayBorderWidth = 4f;
+                        project.photoOverlayCornerRadius = 28f;
+                        project.photoOverlayShadow = true;
                         showPhotoOverlayPreview(); saveProject(false);
                     }
                 }).show();

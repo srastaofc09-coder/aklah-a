@@ -14,6 +14,10 @@ public class ProjectItem {
     public float photoOverlayY = 0.78f;
     public float photoOverlaySize = 0.28f;
     public float photoOverlayOpacity = 1.0f;
+    public int photoOverlayBorderColor = 0xFFFFD66B;
+    public float photoOverlayBorderWidth = 4f;
+    public float photoOverlayCornerRadius = 28f;
+    public boolean photoOverlayShadow = true;
     public List<String> mediaUris = new ArrayList<>();
     public List<ClipItem> clips = new ArrayList<>();
     public List<TextLayer> texts = new ArrayList<>();

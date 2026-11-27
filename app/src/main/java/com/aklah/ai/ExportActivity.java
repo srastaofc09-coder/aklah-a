@@ -6,6 +6,7 @@ import android.graphics.Canvas;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.RectF;
 import android.graphics.Matrix;
 import android.graphics.Color;
@@ -229,7 +230,29 @@ public class ExportActivity extends AppCompatActivity {
             RectF dst = new RectF(cx - w / 2f, cy - h / 2f, cx + w / 2f, cy + h / 2f);
             Paint pipPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
             pipPaint.setAlpha(Math.max(0, Math.min(255, Math.round(project.photoOverlayOpacity * 255f))));
+            float radius = Math.max(0f, Math.min(Math.min(w, h) / 2f, project.photoOverlayCornerRadius));
+            if (project.photoOverlayShadow) {
+                Paint shadow = new Paint(Paint.ANTI_ALIAS_FLAG);
+                shadow.setColor(0x99000000);
+                shadow.setShadowLayer(18f, 0f, 8f, 0xAA000000);
+                canvas.drawRoundRect(dst, radius, radius, shadow);
+            }
+            int save = canvas.save();
+            Path clipPath = new Path();
+            clipPath.addRoundRect(dst, radius, radius, Path.Direction.CW);
+            canvas.clipPath(clipPath);
             canvas.drawBitmap(source, null, dst, pipPaint);
+            canvas.restoreToCount(save);
+            if (project.photoOverlayBorderWidth > 0f && project.photoOverlayBorderColor != 0) {
+                Paint border = new Paint(Paint.ANTI_ALIAS_FLAG);
+                border.setStyle(Paint.Style.STROKE);
+                border.setStrokeWidth(Math.max(1f, project.photoOverlayBorderWidth));
+                border.setColor(project.photoOverlayBorderColor);
+                RectF edge = new RectF(dst.left + border.getStrokeWidth()/2f, dst.top + border.getStrokeWidth()/2f,
+                        dst.right - border.getStrokeWidth()/2f, dst.bottom - border.getStrokeWidth()/2f);
+                canvas.drawRoundRect(edge, Math.max(0f, radius - border.getStrokeWidth()/2f),
+                        Math.max(0f, radius - border.getStrokeWidth()/2f), border);
+            }
             return out;
         } catch (Exception ignored) { return null; }
         finally { if (source != null && !source.isRecycled()) source.recycle(); }

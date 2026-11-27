@@ -31,6 +31,10 @@ public class ProjectStore {
                 p.photoOverlayY = (float) o.optDouble("photoOverlayY", 0.78);
                 p.photoOverlaySize = (float) o.optDouble("photoOverlaySize", 0.28);
                 p.photoOverlayOpacity = (float) o.optDouble("photoOverlayOpacity", 1.0);
+                p.photoOverlayBorderColor = o.optInt("photoOverlayBorderColor", 0xFFFFD66B);
+                p.photoOverlayBorderWidth = (float) o.optDouble("photoOverlayBorderWidth", 4.0);
+                p.photoOverlayCornerRadius = (float) o.optDouble("photoOverlayCornerRadius", 28.0);
+                p.photoOverlayShadow = o.optBoolean("photoOverlayShadow", true);
                 JSONArray media = o.optJSONArray("media");
                 if (media != null) {
                     for (int j = 0; j < media.length(); j++) {
@@ -153,6 +157,10 @@ public class ProjectStore {
                 o.put("photoOverlayY", p.photoOverlayY);
                 o.put("photoOverlaySize", p.photoOverlaySize);
                 o.put("photoOverlayOpacity", p.photoOverlayOpacity);
+                o.put("photoOverlayBorderColor", p.photoOverlayBorderColor);
+                o.put("photoOverlayBorderWidth", p.photoOverlayBorderWidth);
+                o.put("photoOverlayCornerRadius", p.photoOverlayCornerRadius);
+                o.put("photoOverlayShadow", p.photoOverlayShadow);
                 JSONArray media = new JSONArray();
                 for (String u : p.mediaUris) {
                     media.put(u);
