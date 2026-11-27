@@ -86,6 +86,7 @@ public class EditorActivity extends AppCompatActivity {
         brollPicker = registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
             if (uri == null || project == null) return;
             try { getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION); } catch (Exception ignored) { }
+            pushUndo();
             int at = Math.max(0, currentIndex() + 1);
             clips.add(Math.min(at, clips.size()), new ClipItem(uri.toString(), 0, -1));
             project.mediaUris.add(uri.toString());
@@ -565,6 +566,7 @@ public class EditorActivity extends AppCompatActivity {
     }
 
     private void applyTextStyle(final TextLayer layer, int which) {
+        pushUndo();
         layer.rtl = false;
         layer.color = 0xFFFFFFFF;
         layer.bgColor = 0x66000000;
@@ -699,6 +701,7 @@ public class EditorActivity extends AppCompatActivity {
     }
 
     private void addKaraokeCaption() {
+        pushUndo();
         long now = timelineMs();
         TextLayer layer = new TextLayer("TYPE YOUR CAPTION");
         layer.startMs = now;
@@ -801,6 +804,7 @@ public class EditorActivity extends AppCompatActivity {
 
     private void addSubtitleAtPlayhead() {
         if (project == null) return;
+        pushUndo();
         long now = timelineMs();
         TextLayer layer = new TextLayer("Type your subtitle");
         layer.startMs = now;
@@ -836,6 +840,7 @@ public class EditorActivity extends AppCompatActivity {
 
     private void addStyledOverlay(String value, int size, int color, int bg,
                                   float x, float y, int kind) {
+        pushUndo();
         TextLayer layer = new TextLayer(value);
         layer.startMs = timelineMs();
         layer.endMs = layer.startMs + (kind == 3 || kind == 4 ? 5000 : 6000);
@@ -1637,6 +1642,7 @@ public class EditorActivity extends AppCompatActivity {
     }
 
     private void applyTextTool(TextLayer layer, int action) {
+        pushUndo();
         if (action == 0) {
             TextLayer copy = layer.copy();
             copy.xFrac = clamp(copy.xFrac + 0.04f);
