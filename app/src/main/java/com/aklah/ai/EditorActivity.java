@@ -212,6 +212,7 @@ public class EditorActivity extends AppCompatActivity {
         addButton(r6, "Color", () -> { ClipItem c = selectedClip(); if (c != null) showColorAdjustments(c); });
         addButton(r6, "Blur / Fill", () -> { ClipItem c = selectedClip(); if (c != null) chooseBlur(c); });
         addButton(r6, "Mask", () -> { ClipItem c = selectedClip(); if (c != null) editMaskBounds(c); });
+        addButton(r6, "Motion Presets", () -> { ClipItem c = selectedClip(); if (c != null) chooseMotionPreset(c); });
         LinearLayout r7 = findViewById(R.id.row7);
         addButton(r7, "Canvas Ratio", () -> chooseCanvasRatio());
         addButton(r7, "Creator Studio", () -> showStudioTools());
@@ -1515,6 +1516,79 @@ public class EditorActivity extends AppCompatActivity {
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
+    }
+
+
+    // One-tap motion presets use the same keyframe data consumed by MP4 export.
+    private void chooseMotionPreset(ClipItem clip) {
+        final String[] names = {
+                "Gentle Zoom In", "Gentle Zoom Out", "Dynamic Punch In",
+                "Pull Back Reveal", "Pan Left to Right", "Pan Right to Left",
+                "Pan Bottom to Top", "Pan Top to Bottom",
+                "Diagonal Drift", "Ken Burns (Zoom + Pan)",
+                "Reset Motion"
+        };
+        new AlertDialog.Builder(this).setTitle("MOTION PRESETS")
+                .setItems(names, (dialog, which) -> {
+                    pushUndo();
+                    long duration = Math.max(500L, clipDurationMs(clip));
+                    clip.keyStartMs = 0L;
+                    clip.keyEndMs = duration;
+                    clip.keyEasing = 3;
+                    clip.keyStartScale = 1f;
+                    clip.keyEndScale = 1f;
+                    clip.keyStartX = 0.5f;
+                    clip.keyStartY = 0.5f;
+                    clip.keyEndX = 0.5f;
+                    clip.keyEndY = 0.5f;
+                    switch (which) {
+                        case 0:
+                            clip.keyStartScale = 1.0f; clip.keyEndScale = 1.18f;
+                            break;
+                        case 1:
+                            clip.keyStartScale = 1.18f; clip.keyEndScale = 1.0f;
+                            break;
+                        case 2:
+                            clip.keyStartScale = 1.0f; clip.keyEndScale = 1.45f;
+                            break;
+                        case 3:
+                            clip.keyStartScale = 1.4f; clip.keyEndScale = 1.0f;
+                            break;
+                        case 4:
+                            clip.keyStartX = 0.38f; clip.keyEndX = 0.62f;
+                            clip.keyStartScale = 1.18f; clip.keyEndScale = 1.18f;
+                            break;
+                        case 5:
+                            clip.keyStartX = 0.62f; clip.keyEndX = 0.38f;
+                            clip.keyStartScale = 1.18f; clip.keyEndScale = 1.18f;
+                            break;
+                        case 6:
+                            clip.keyStartY = 0.62f; clip.keyEndY = 0.38f;
+                            clip.keyStartScale = 1.18f; clip.keyEndScale = 1.18f;
+                            break;
+                        case 7:
+                            clip.keyStartY = 0.38f; clip.keyEndY = 0.62f;
+                            clip.keyStartScale = 1.18f; clip.keyEndScale = 1.18f;
+                            break;
+                        case 8:
+                            clip.keyStartScale = 1.22f; clip.keyEndScale = 1.22f;
+                            clip.keyStartX = 0.38f; clip.keyStartY = 0.38f;
+                            clip.keyEndX = 0.62f; clip.keyEndY = 0.62f;
+                            break;
+                        case 9:
+                            clip.keyStartScale = 1.05f; clip.keyEndScale = 1.32f;
+                            clip.keyStartX = 0.42f; clip.keyStartY = 0.58f;
+                            clip.keyEndX = 0.58f; clip.keyEndY = 0.42f;
+                            break;
+                        default:
+                            clip.keyStartMs = 0L; clip.keyEndMs = 1000L;
+                            clip.keyEasing = 0;
+                            break;
+                    }
+                    saveProject(false);
+                    refreshStrip();
+                    toast(which == 10 ? "Motion reset saved" : "Motion preset export ke liye saved");
+                }).setNegativeButton("Cancel", null).show();
     }
 
     private void chooseClipSpeed(ClipItem clip) {
