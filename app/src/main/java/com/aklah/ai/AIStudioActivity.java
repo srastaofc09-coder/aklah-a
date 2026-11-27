@@ -36,7 +36,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class AIStudioActivity extends AppCompatActivity {
-    private static final String FABLE_BACKEND_URL = "https://aklah-fable-api.YOUR_ACCOUNT.workers.dev";
+    private static final String FABLE_BACKEND_URL = "https://withered-dawn-cbb9.axasta89.workers.dev";
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private final Handler main = new Handler(Looper.getMainLooper());
     private EditText promptBox, durationBox;
