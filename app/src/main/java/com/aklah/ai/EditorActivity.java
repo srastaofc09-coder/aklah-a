@@ -3,6 +3,8 @@ package com.aklah.ai;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.net.Uri;
+import android.content.ClipData;
+import android.provider.OpenableColumns;
 import android.content.ActivityNotFoundException;
 import android.os.Bundle;
 import android.os.Handler;
@@ -19,6 +21,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.media3.common.C;
 import androidx.media3.common.MediaItem;
@@ -50,6 +54,7 @@ public class EditorActivity extends AppCompatActivity {
 
     private final List<TextLayer> texts = new ArrayList<>();
     private final List<TextView> textViews = new ArrayList<>();
+    private ActivityResultLauncher<String> brollPicker;
     private FrameLayout overlay;
     private boolean dragging = false;
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -66,6 +71,16 @@ public class EditorActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_editor);
 
+        brollPicker = registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
+            if (uri == null || project == null) return;
+            try { getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION); } catch (Exception ignored) { }
+            int at = Math.max(0, currentIndex() + 1);
+            clips.add(Math.min(at, clips.size()), new ClipItem(uri.toString(), 0, -1));
+            project.mediaUris.add(uri.toString());
+            saveProject(false);
+            reload(Math.min(at, clips.size() - 1), 0);
+            toast("B-roll timeline mein insert ho gaya; narration ke saath position manually set karein");
+        });
         project = findProject(getIntent().getStringExtra(EXTRA_PROJECT_ID));
         if (project == null) {
             Toast.makeText(this, "Project nahi mila", Toast.LENGTH_SHORT).show();
@@ -562,28 +577,50 @@ public class EditorActivity extends AppCompatActivity {
         }
     }
 
-    // Studio tools: quick text-based assets that are editable, saved and exported.
+    // Creator storytelling reel tools: editable overlays and manual B-roll insertion.
     private void showStudioTools() {
         final String[] tools = {
-                "Sticker / Emoji", "Shape Overlay", "Title Card", "Lower Third",
-                "Subtitle / Caption", "Watermark", "Text Animation Timing",
-                "Advanced Clip Lab", "More Timeline Tools"
+                "Silhouette + Red Glow Backdrop",
+                "Karaoke Caption (keyword style)",
+                "Insert B-roll video",
+                "Chat Bubble / DM Overlay",
+                "Creator Watermark",
+                "Subtitle / Caption",
+                "Text Animation Timing",
+                "Advanced Clip Lab",
+                "More Timeline Tools"
         };
         new AlertDialog.Builder(this)
-                .setTitle("AKLAH AI • STUDIO TOOLS")
+                .setTitle("AKLAH AI • CREATOR REEL STUDIO")
                 .setItems(tools, (dialog, which) -> {
                     switch (which) {
-                        case 0: chooseSticker(); break;
-                        case 1: chooseShape(); break;
-                        case 2: addStyledOverlay("YOUR TITLE", 36, 0xFFFFD66B, 0x99000000, 0.5f, 0.28f, 0); break;
-                        case 3: addStyledOverlay("Name • Description", 24, 0xFFFFFFFF, 0x99000000, 0.28f, 0.78f, 1); break;
-                        case 4: addSubtitleAtPlayhead(); break;
-                        case 5: addStyledOverlay("© AKLAH AI", 16, 0xCCFFFFFF, 0x55000000, 0.82f, 0.92f, 2); break;
+                        case 0: applySilhouetteGlowPreset(); break;
+                        case 1: addStyledOverlay("YOUR KEYWORD", 30, 0xFFFFD21F, 0xAA111111, 0.5f, 0.72f, 0); break;
+                        case 2: brollPicker.launch("video/*"); break;
+                        case 3: addStyledOverlay("💬  Your message here", 22, 0xFFFFFFFF, 0xDD17191F, 0.5f, 0.68f, 1); break;
+                        case 4: addStyledOverlay("@yourhandle", 17, 0xCCFFFFFF, 0x44000000, 0.82f, 0.94f, 2); break;
+                        case 5: addSubtitleAtPlayhead(); break;
                         case 6: chooseTextAnimation(); break;
                         case 7: showAdvancedClipTools(); break;
                         case 8: showMoreTools(); break;
                     }
                 }).show();
+    }
+
+    private void applySilhouetteGlowPreset() {
+        ClipItem clip = selectedClip();
+        if (clip == null) return;
+        pushUndo();
+        clip.maskEnabled = true;
+        clip.maskMode = 4;
+        clip.maskX = 0.30f;
+        clip.maskY = 0.12f;
+        clip.maskWidth = 0.40f;
+        clip.maskHeight = 0.62f;
+        saveProject(false);
+        refreshStrip();
+        editMaskBounds(clip);
+        toast("Silhouette + red glow preset: mask bounds ko creator par adjust karein");
     }
 
     private void chooseTextAnimation() {
