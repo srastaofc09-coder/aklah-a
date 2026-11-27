@@ -209,6 +209,7 @@ public class EditorActivity extends AppCompatActivity {
         addButton(r6, "Crop / Ratio", () -> { ClipItem c = selectedClip(); if (c != null) chooseCropMode(c); });
         addButton(r6, "Rotate / Mirror", () -> showAdvancedClipTools());
         addButton(r6, "Filter", () -> { ClipItem c = selectedClip(); if (c != null) chooseFilterPreset(c); });
+        addButton(r6, "Filter Intensity", () -> { ClipItem c = selectedClip(); if (c != null) chooseFilterIntensity(c); });
         addButton(r6, "Speed / Flow", () -> { ClipItem c = selectedClip(); if (c != null) chooseClipSpeed(c); });
         addButton(r6, "Color", () -> { ClipItem c = selectedClip(); if (c != null) showColorAdjustments(c); });
         addButton(r6, "Blur / Fill", () -> { ClipItem c = selectedClip(); if (c != null) chooseBlur(c); });
@@ -1809,62 +1810,80 @@ public class EditorActivity extends AppCompatActivity {
     }
 
     private void chooseFilterPreset(ClipItem clip) {
-        final String[] names = {
-                "Normal", "Black & White", "Cinematic", "Warm Film",
-                "Cool Blue", "Bright Clean", "Vintage Soft", "High Contrast",
-                "Warm Amber", "Ice Blue", "Teal & Orange", "Soft Dream",
-                "Golden Hour", "Matte Fade", "Noir Drama", "Retro 90s",
-                "Pastel Air", "Moody Green", "Sunset Glow", "Oceanic",
-                "Rose Gold", "Desert Sand", "Neon Night", "Faithful Natural"
-        };
-        new AlertDialog.Builder(this)
-                .setTitle("FILTER STUDIO • 24 LOOKS")
+        final String[] names = {"Normal", "Black & White", "Cinematic", "Warm Film", "Cool Blue", "Bright Clean", "Vintage Soft", "High Contrast", "Warm Amber", "Ice Blue", "Teal & Orange", "Soft Dream", "Golden Hour", "Matte Fade", "Noir Drama", "Retro 90s", "Pastel Air", "Moody Green", "Sunset Glow", "Oceanic", "Rose Gold", "Desert Sand", "Neon Night", "Faithful Natural", "Arctic Steel", "Candlelight", "Cinema Olive", "Muted Documentary", "Crimson Night", "Lavender Haze", "Copper Film", "Monochrome Silver", "Mint Fresh", "Storm Cloud", "Honey Vintage", "Blue Hour", "Analog Dustless", "Skin Tone Warm", "Deep Forest", "Candy Pop"};
+        new AlertDialog.Builder(this).setTitle("FILTER STUDIO • 40 LOOKS")
                 .setItems(names, (dialog, which) -> {
-                    pushUndo();
-                    // Reset every supported color channel before applying a preset.
-                    clip.redScale = 1f;
-                    clip.greenScale = 1f;
-                    clip.blueScale = 1f;
-                    clip.blurSigma = 0f;
+                    pushUndo(); clip.redScale=1f; clip.greenScale=1f; clip.blueScale=1f; clip.blurSigma=0f;
                     switch (which) {
-                        case 0: clip.brightness=0f; clip.contrast=1f; clip.saturation=1f; break;
-                        case 1: clip.brightness=0f; clip.contrast=1.12f; clip.saturation=0f; break;
-                        case 2: clip.brightness=-0.04f; clip.contrast=1.28f; clip.saturation=0.82f; break;
-                        case 3: clip.brightness=0.06f; clip.contrast=1.08f; clip.saturation=1.22f; clip.redScale=1.12f; clip.blueScale=0.92f; break;
-                        case 4: clip.brightness=-0.03f; clip.contrast=1.12f; clip.saturation=0.88f; clip.redScale=0.92f; clip.blueScale=1.12f; break;
-                        case 5: clip.brightness=0.18f; clip.contrast=1.02f; clip.saturation=1.08f; break;
-                        case 6: clip.brightness=0.02f; clip.contrast=0.92f; clip.saturation=0.72f; break;
-                        case 7: clip.brightness=-0.06f; clip.contrast=1.55f; clip.saturation=1.18f; break;
+                        case 0: clip.brightness=0f; clip.contrast=1f; clip.saturation=1f; clip.redScale=1f; clip.greenScale=1f; clip.blueScale=1f; break;
+                        case 1: clip.brightness=0f; clip.contrast=1.12f; clip.saturation=0f; clip.redScale=1f; clip.greenScale=1f; clip.blueScale=1f; break;
+                        case 2: clip.brightness=-0.04f; clip.contrast=1.28f; clip.saturation=0.82f; clip.redScale=1f; clip.greenScale=1f; clip.blueScale=1f; break;
+                        case 3: clip.brightness=0.06f; clip.contrast=1.08f; clip.saturation=1.22f; clip.redScale=1.12f; clip.greenScale=1f; clip.blueScale=0.92f; break;
+                        case 4: clip.brightness=-0.03f; clip.contrast=1.12f; clip.saturation=0.88f; clip.redScale=0.92f; clip.greenScale=1f; clip.blueScale=1.12f; break;
+                        case 5: clip.brightness=0.18f; clip.contrast=1.02f; clip.saturation=1.08f; clip.redScale=1f; clip.greenScale=1f; clip.blueScale=1f; break;
+                        case 6: clip.brightness=0.02f; clip.contrast=0.92f; clip.saturation=0.72f; clip.redScale=1f; clip.greenScale=1f; clip.blueScale=1f; break;
+                        case 7: clip.brightness=-0.06f; clip.contrast=1.55f; clip.saturation=1.18f; clip.redScale=1f; clip.greenScale=1f; clip.blueScale=1f; break;
                         case 8: clip.brightness=0.05f; clip.contrast=1.08f; clip.saturation=1.12f; clip.redScale=1.18f; clip.greenScale=1.02f; clip.blueScale=0.82f; break;
                         case 9: clip.brightness=0.02f; clip.contrast=1.05f; clip.saturation=0.92f; clip.redScale=0.88f; clip.greenScale=1.02f; clip.blueScale=1.18f; break;
                         case 10: clip.brightness=-0.02f; clip.contrast=1.2f; clip.saturation=1.1f; clip.redScale=1.15f; clip.greenScale=1.02f; clip.blueScale=0.88f; break;
-                        case 11: clip.brightness=0.08f; clip.contrast=0.9f; clip.saturation=0.78f; clip.blurSigma=2.0f; break;
-                        case 12: clip.brightness=0.12f; clip.contrast=1.08f; clip.saturation=1.28f; clip.redScale=1.16f; clip.blueScale=0.84f; break;
-                        case 13: clip.brightness=0.04f; clip.contrast=0.82f; clip.saturation=0.68f; break;
-                        case 14: clip.brightness=-0.12f; clip.contrast=1.62f; clip.saturation=0.42f; break;
+                        case 11: clip.brightness=0.08f; clip.contrast=0.9f; clip.saturation=0.78f; clip.redScale=1f; clip.greenScale=1f; clip.blueScale=1f; break;
+                        case 12: clip.brightness=0.12f; clip.contrast=1.08f; clip.saturation=1.28f; clip.redScale=1.16f; clip.greenScale=1f; clip.blueScale=0.84f; break;
+                        case 13: clip.brightness=0.04f; clip.contrast=0.82f; clip.saturation=0.68f; clip.redScale=1f; clip.greenScale=1f; clip.blueScale=1f; break;
+                        case 14: clip.brightness=-0.12f; clip.contrast=1.62f; clip.saturation=0.42f; clip.redScale=1f; clip.greenScale=1f; clip.blueScale=1f; break;
                         case 15: clip.brightness=0.03f; clip.contrast=1.14f; clip.saturation=1.34f; clip.redScale=1.12f; clip.greenScale=0.98f; clip.blueScale=0.86f; break;
-                        case 16: clip.brightness=0.1f; clip.contrast=0.94f; clip.saturation=0.76f; clip.redScale=1.08f; clip.blueScale=1.04f; break;
+                        case 16: clip.brightness=0.1f; clip.contrast=0.94f; clip.saturation=0.76f; clip.redScale=1.08f; clip.greenScale=1f; clip.blueScale=1.04f; break;
                         case 17: clip.brightness=-0.04f; clip.contrast=1.18f; clip.saturation=0.72f; clip.redScale=0.92f; clip.greenScale=1.12f; clip.blueScale=0.88f; break;
                         case 18: clip.brightness=0.06f; clip.contrast=1.16f; clip.saturation=1.2f; clip.redScale=1.2f; clip.greenScale=1.02f; clip.blueScale=0.78f; break;
                         case 19: clip.brightness=0.02f; clip.contrast=1.12f; clip.saturation=1.16f; clip.redScale=0.86f; clip.greenScale=1.08f; clip.blueScale=1.2f; break;
                         case 20: clip.brightness=0.06f; clip.contrast=1.02f; clip.saturation=0.92f; clip.redScale=1.14f; clip.greenScale=0.98f; clip.blueScale=1.06f; break;
                         case 21: clip.brightness=0.08f; clip.contrast=1.1f; clip.saturation=0.84f; clip.redScale=1.14f; clip.greenScale=1.04f; clip.blueScale=0.86f; break;
                         case 22: clip.brightness=-0.08f; clip.contrast=1.42f; clip.saturation=1.3f; clip.redScale=1.12f; clip.greenScale=0.9f; clip.blueScale=1.18f; break;
-                        case 23: clip.brightness=0f; clip.contrast=1f; clip.saturation=1f; break;
+                        case 23: clip.brightness=0f; clip.contrast=1f; clip.saturation=1f; clip.redScale=1f; clip.greenScale=1f; clip.blueScale=1f; break;
+                        case 24: clip.brightness=-0.03f; clip.contrast=1.16f; clip.saturation=0.78f; clip.redScale=0.88f; clip.greenScale=1.02f; clip.blueScale=1.22f; break;
+                        case 25: clip.brightness=0.1f; clip.contrast=1.05f; clip.saturation=1.08f; clip.redScale=1.18f; clip.greenScale=1.06f; clip.blueScale=0.82f; break;
+                        case 26: clip.brightness=-0.02f; clip.contrast=1.22f; clip.saturation=0.82f; clip.redScale=0.92f; clip.greenScale=1.12f; clip.blueScale=0.84f; break;
+                        case 27: clip.brightness=0.02f; clip.contrast=0.88f; clip.saturation=0.72f; clip.redScale=0.96f; clip.greenScale=1.02f; clip.blueScale=1.04f; break;
+                        case 28: clip.brightness=-0.1f; clip.contrast=1.38f; clip.saturation=1.12f; clip.redScale=1.18f; clip.greenScale=0.82f; clip.blueScale=0.94f; break;
+                        case 29: clip.brightness=0.05f; clip.contrast=0.94f; clip.saturation=0.8f; clip.redScale=1.04f; clip.greenScale=0.92f; clip.blueScale=1.12f; break;
+                        case 30: clip.brightness=0.03f; clip.contrast=1.2f; clip.saturation=0.92f; clip.redScale=1.18f; clip.greenScale=1.02f; clip.blueScale=0.82f; break;
+                        case 31: clip.brightness=0f; clip.contrast=1.3f; clip.saturation=0f; clip.redScale=1f; clip.greenScale=1f; clip.blueScale=1f; break;
+                        case 32: clip.brightness=0.08f; clip.contrast=0.96f; clip.saturation=1.04f; clip.redScale=0.9f; clip.greenScale=1.12f; clip.blueScale=1.02f; break;
+                        case 33: clip.brightness=-0.06f; clip.contrast=1.28f; clip.saturation=0.66f; clip.redScale=0.82f; clip.greenScale=0.96f; clip.blueScale=1.12f; break;
+                        case 34: clip.brightness=0.06f; clip.contrast=0.94f; clip.saturation=0.82f; clip.redScale=1.16f; clip.greenScale=1.04f; clip.blueScale=0.84f; break;
+                        case 35: clip.brightness=0.04f; clip.contrast=1.12f; clip.saturation=1.02f; clip.redScale=1.08f; clip.greenScale=0.98f; clip.blueScale=0.9f; break;
+                        case 36: clip.brightness=-0.02f; clip.contrast=1.18f; clip.saturation=0.9f; clip.redScale=0.82f; clip.greenScale=0.98f; clip.blueScale=1.2f; break;
+                        case 37: clip.brightness=0.02f; clip.contrast=1.06f; clip.saturation=0.94f; clip.redScale=1.06f; clip.greenScale=1.02f; clip.blueScale=0.98f; break;
+                        case 38: clip.brightness=-0.05f; clip.contrast=1.24f; clip.saturation=0.72f; clip.redScale=0.84f; clip.greenScale=1.12f; clip.blueScale=0.82f; break;
+                        case 39: clip.brightness=0.12f; clip.contrast=1.14f; clip.saturation=1.42f; clip.redScale=1.2f; clip.greenScale=1.02f; clip.blueScale=0.86f; break;
                     }
-                    saveProject(false);
-                    toast("Filter saved • MP4 export mein apply hoga");
+                    clip.filterStrength=1f; saveProject(false);
+                    toast("Filter saved • intensity 100% • MP4 export mein apply hoga");
                 })
                 .setNeutralButton("Reset Filter", (dialog, which) -> {
-                    pushUndo();
-                    clip.brightness=0f; clip.contrast=1f; clip.saturation=1f;
-                    clip.redScale=1f; clip.greenScale=1f; clip.blueScale=1f;
-                    clip.blurSigma=0f;
-                    saveProject(false);
-                    toast("Filter reset ho gaya");
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
+                    pushUndo(); clip.brightness=0f; clip.contrast=1f; clip.saturation=1f;
+                    clip.redScale=1f; clip.greenScale=1f; clip.blueScale=1f; clip.blurSigma=0f; clip.filterStrength=1f;
+                    saveProject(false); toast("Filter reset ho gaya");
+                }).setNegativeButton("Cancel", null).show();
+    }
+
+    private void chooseFilterIntensity(ClipItem clip) {
+        LinearLayout root = new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(dp(18), dp(12), dp(18), dp(8));
+        TextView value = new TextView(this); value.setTextColor(0xFFFFD66B); value.setTextSize(17);
+        SeekBar bar = new SeekBar(this); bar.setMax(100);
+        bar.setProgress(Math.round(Math.max(0f, Math.min(1f, clip.filterStrength))*100f));
+        value.setText("Filter intensity: "+bar.getProgress()+"%"); root.addView(value); root.addView(bar);
+        bar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar seek, int progress, boolean fromUser) { value.setText("Filter intensity: "+progress+"%"); }
+            @Override public void onStartTrackingTouch(SeekBar seek) { }
+            @Override public void onStopTrackingTouch(SeekBar seek) { }
+        });
+        new AlertDialog.Builder(this).setTitle("FILTER INTENSITY")
+                .setMessage("0% = original look, 100% = full preset. Export mein apply hoga.")
+                .setView(root).setPositiveButton("Apply", (d,w) -> {
+                    pushUndo(); clip.filterStrength=bar.getProgress()/100f; saveProject(false); toast("Filter intensity saved");
+                }).setNeutralButton("Full", (d,w) -> { pushUndo(); clip.filterStrength=1f; saveProject(false); })
+                .setNegativeButton("Cancel", null).show();
     }
 
     private void chooseBlur(ClipItem clip) {

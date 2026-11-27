@@ -21,6 +21,7 @@ public class ClipItem {
     public boolean flipX = false;
     public boolean flipY = false;
     public float blurSigma = 0f;
+    public float filterStrength = 1f; // 0 original, 1 full preset
     public float redScale = 1f;
     public float greenScale = 1f;
     public float blueScale = 1f;
@@ -58,6 +59,7 @@ public class ClipItem {
         copy.flipX = flipX;
         copy.flipY = flipY;
         copy.blurSigma = blurSigma;
+        copy.filterStrength = filterStrength;
         copy.redScale = redScale;
         copy.greenScale = greenScale;
         copy.blueScale = blueScale;

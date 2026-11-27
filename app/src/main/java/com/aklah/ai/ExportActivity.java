@@ -315,23 +315,31 @@ public class ExportActivity extends AppCompatActivity {
                 });
             }
 
-            if (Math.abs(c.brightness) > 0.001f) video.add(new Brightness(c.brightness));
-            if (Math.abs(c.contrast - 1f) > 0.001f) video.add(new Contrast(c.contrast));
-            if (Math.abs(c.saturation - 1f) > 0.001f) {
+            float filterMix = Math.max(0f, Math.min(1f, c.filterStrength));
+            float effectBrightness = c.brightness * filterMix;
+            float effectContrast = 1f + (c.contrast - 1f) * filterMix;
+            float effectSaturation = 1f + (c.saturation - 1f) * filterMix;
+            float effectRed = 1f + (c.redScale - 1f) * filterMix;
+            float effectGreen = 1f + (c.greenScale - 1f) * filterMix;
+            float effectBlue = 1f + (c.blueScale - 1f) * filterMix;
+            float effectBlur = c.blurSigma * filterMix;
+            if (Math.abs(effectBrightness) > 0.001f) video.add(new Brightness(effectBrightness));
+            if (Math.abs(effectContrast - 1f) > 0.001f) video.add(new Contrast(effectContrast));
+            if (Math.abs(effectSaturation - 1f) > 0.001f) {
                 video.add(new HslAdjustment.Builder()
-                        .adjustSaturation((c.saturation - 1f) * 100f)
+                        .adjustSaturation((effectSaturation - 1f) * 100f)
                         .build());
             }
-            if (Math.abs(c.redScale - 1f) > 0.001f
-                    || Math.abs(c.greenScale - 1f) > 0.001f
-                    || Math.abs(c.blueScale - 1f) > 0.001f) {
+            if (Math.abs(effectRed - 1f) > 0.001f
+                    || Math.abs(effectGreen - 1f) > 0.001f
+                    || Math.abs(effectBlue - 1f) > 0.001f) {
                 video.add(new RgbAdjustment.Builder()
-                        .setRedScale(c.redScale)
-                        .setGreenScale(c.greenScale)
-                        .setBlueScale(c.blueScale)
+                        .setRedScale(effectRed)
+                        .setGreenScale(effectGreen)
+                        .setBlueScale(effectBlue)
                         .build());
             }
-            if (c.blurSigma > 0.01f) video.add(new GaussianBlur(c.blurSigma));
+            if (effectBlur > 0.01f) video.add(new GaussianBlur(effectBlur));
             // Privacy mask: render a fixed opaque cover into each clip's export frames.
             // Preview positioning is not yet wired; normalized bounds are persisted per clip.
             if (c.maskEnabled) {
