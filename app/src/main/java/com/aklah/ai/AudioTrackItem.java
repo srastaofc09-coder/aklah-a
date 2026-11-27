@@ -14,4 +14,16 @@ public class AudioTrackItem {
     public AudioTrackItem(String uri) {
         this.uri = uri;
     }
+
+    public AudioTrackItem copy() {
+        AudioTrackItem copy = new AudioTrackItem(uri);
+        copy.volume = volume;
+        copy.startMs = startMs;
+        copy.trimStartMs = trimStartMs;
+        copy.trimEndMs = trimEndMs;
+        copy.muted = muted;
+        copy.fadeInMs = fadeInMs;
+        copy.fadeOutMs = fadeOutMs;
+        return copy;
+    }
 }

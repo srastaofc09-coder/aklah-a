@@ -51,8 +51,13 @@ public class EditorActivity extends AppCompatActivity {
     private ExoPlayer player;
     private ProjectItem project;
     private List<ClipItem> clips = new ArrayList<>();
-    private final Deque<List<ClipItem>> undoStack = new ArrayDeque<>();
-    private final Deque<List<ClipItem>> redoStack = new ArrayDeque<>();
+    private static class EditorSnapshot {
+        final List<ClipItem> clips = new ArrayList<>();
+        final List<TextLayer> texts = new ArrayList<>();
+        final List<AudioTrackItem> audioTracks = new ArrayList<>();
+    }
+    private final Deque<EditorSnapshot> undoStack = new ArrayDeque<>();
+    private final Deque<EditorSnapshot> redoStack = new ArrayDeque<>();
     private LinearLayout strip;
     private float timelineZoom = 1f;
     private ScaleGestureDetector timelineScaleDetector;
@@ -445,8 +450,35 @@ public class EditorActivity extends AppCompatActivity {
         return s;
     }
 
+    private EditorSnapshot captureEditorSnapshot() {
+        EditorSnapshot state = new EditorSnapshot();
+        for (ClipItem clip : clips) state.clips.add(clip.copy());
+        for (TextLayer layer : texts) state.texts.add(layer.copy());
+        if (project != null && project.audioTracks != null) {
+            for (AudioTrackItem track : project.audioTracks) state.audioTracks.add(track.copy());
+        }
+        return state;
+    }
+
+    private void restoreEditorSnapshot(EditorSnapshot state) {
+        if (state == null) return;
+        int keep = Math.max(0, currentIndex());
+        clips = new ArrayList<>();
+        for (ClipItem clip : state.clips) clips.add(clip.copy());
+        texts.clear();
+        for (TextLayer layer : state.texts) texts.add(layer.copy());
+        if (project != null) {
+            project.audioTracks.clear();
+            for (AudioTrackItem track : state.audioTracks) project.audioTracks.add(track.copy());
+        }
+        if (!clips.isEmpty()) reload(Math.min(keep, clips.size() - 1), 0);
+        rebuildOverlay();
+        renderTimelineLayerLanes();
+        saveProject(false);
+    }
+
     private void pushUndo() {
-        undoStack.push(snapshot());
+        undoStack.push(captureEditorSnapshot());
         redoStack.clear();
     }
 
@@ -455,10 +487,9 @@ public class EditorActivity extends AppCompatActivity {
             toast("Undo ke liye kuch nahi");
             return;
         }
-        int keep = Math.max(0, currentIndex());
-        redoStack.push(snapshot());
-        clips = undoStack.pop();
-        reload(Math.min(keep, clips.size() - 1), 0);
+        redoStack.push(captureEditorSnapshot());
+        restoreEditorSnapshot(undoStack.pop());
+        toast("Undo applied");
     }
 
     private void redo() {
@@ -466,10 +497,9 @@ public class EditorActivity extends AppCompatActivity {
             toast("Redo ke liye kuch nahi");
             return;
         }
-        int keep = Math.max(0, currentIndex());
-        undoStack.push(snapshot());
-        clips = redoStack.pop();
-        reload(Math.min(keep, clips.size() - 1), 0);
+        undoStack.push(captureEditorSnapshot());
+        restoreEditorSnapshot(redoStack.pop());
+        toast("Redo applied");
     }
 
     // ---------- Text layers ----------
@@ -478,6 +508,7 @@ public class EditorActivity extends AppCompatActivity {
         TextDialog.show(this, null, new TextDialog.Callback() {
             @Override
             public void onSave(TextLayer layer) {
+                pushUndo();
                 texts.add(layer);
                 rebuildOverlay();
                 saveProject(false);
@@ -1618,6 +1649,7 @@ public class EditorActivity extends AppCompatActivity {
             public void onSave(TextLayer updated) {
                 int i = texts.indexOf(layer);
                 if (i >= 0) {
+                    pushUndo();
                     texts.set(i, updated);
                 }
                 rebuildOverlay();
@@ -1626,6 +1658,7 @@ public class EditorActivity extends AppCompatActivity {
 
             @Override
             public void onDelete() {
+                if (texts.contains(layer)) pushUndo();
                 texts.remove(layer);
                 rebuildOverlay();
                 saveProject(false);
@@ -1786,6 +1819,7 @@ public class EditorActivity extends AppCompatActivity {
                 getContentResolver().takePersistableUriPermission(uri,
                         Intent.FLAG_GRANT_READ_URI_PERMISSION);
             } catch (Exception ignored) { }
+            pushUndo();
             AudioTrackItem track = new AudioTrackItem(uri.toString());
             project.audioTracks.add(track);
             saveProject(false);
@@ -1852,17 +1886,20 @@ public class EditorActivity extends AppCompatActivity {
                 .setTitle("Audio track controls")
                 .setView(panel)
                 .setNeutralButton(track.muted ? "Unmute" : "Mute", (d, w) -> {
+                    pushUndo();
                     track.muted = !track.muted;
                     saveProject(false);
                     manageAudioTracks();
                 })
                 .setNegativeButton("Delete track", (d, w) -> {
+                    pushUndo();
                     project.audioTracks.remove(track);
                     saveProject(false);
                     refreshStrip();
                     toast("Audio track removed");
                 })
                 .setPositiveButton("Save", (d, w) -> {
+                    pushUndo();
                     track.volume = volume.getProgress() / 100f;
                     track.fadeInMs = fadeIn.getProgress() * 100L;
                     track.fadeOutMs = fadeOut.getProgress() * 100L;
