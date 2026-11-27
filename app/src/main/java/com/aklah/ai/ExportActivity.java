@@ -520,13 +520,22 @@ public class ExportActivity extends AppCompatActivity {
                             .build());
                 }
             }
+            long trimStartMs = Math.max(0L, Math.min(durationMs - 1L, track.trimStartMs));
+            long trimEndMs = track.trimEndMs > trimStartMs
+                    ? Math.min(durationMs, track.trimEndMs) : durationMs;
+            if (trimEndMs <= trimStartMs) continue;
             MediaItem audioMediaItem = new MediaItem.Builder()
                     .setUri(Uri.parse(track.uri))
+                    .setClippingConfiguration(new MediaItem.ClippingConfiguration.Builder()
+                            .setStartPositionMs(trimStartMs)
+                            .setEndPositionMs(trimEndMs)
+                            .build())
                     .build();
-            long audioDurationUs = durationMs * 1000L;
+            long audioDurationUs = (trimEndMs - trimStartMs) * 1000L;
             List<AudioProcessor> trackAudioEffects = new ArrayList<>();
             trackAudioEffects.add(new ClipAudioProcessor(track.volume,
-                    track.fadeInMs * 1000L, track.fadeOutMs * 1000L, audioDurationUs));
+                    Math.min(track.fadeInMs * 1000L, audioDurationUs),
+                    Math.min(track.fadeOutMs * 1000L, audioDurationUs), audioDurationUs));
             EditedMediaItem audioEditedItem = new EditedMediaItem.Builder(audioMediaItem)
                     .setRemoveVideo(true)
                     .setEffects(new Effects(trackAudioEffects, Collections.emptyList()))
