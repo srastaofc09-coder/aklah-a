@@ -136,6 +136,68 @@ public class ExportActivity extends AppCompatActivity {
         return null;
     }
 
+    private long getMediaDurationMs(String uri) {
+        android.media.MediaMetadataRetriever retriever =
+                new android.media.MediaMetadataRetriever();
+        try {
+            retriever.setDataSource(this, Uri.parse(uri));
+            String value = retriever.extractMetadata(
+                    android.media.MediaMetadataRetriever.METADATA_KEY_DURATION);
+            return value == null ? -1L : Long.parseLong(value);
+        } catch (Exception ignored) {
+            return -1L;
+        } finally {
+            try { retriever.release(); } catch (Exception ignored) { }
+        }
+    }
+
+    private File createSilenceWav(long durationMs) {
+        // Small 8 kHz mono PCM silence file used to place music at its timeline offset.
+        long boundedMs = Math.max(1L, Math.min(1800000L, durationMs));
+        int sampleRate = 8000;
+        int channels = 1;
+        int bitsPerSample = 16;
+        long dataSizeLong = boundedMs * sampleRate * channels * (bitsPerSample / 8L) / 1000L;
+        if (dataSizeLong > 0x7FFFFFF0L) return null;
+        int dataSize = (int) dataSizeLong;
+        File file = new File(getCacheDir(), "aklah_silence_" + boundedMs + ".wav");
+        if (file.exists() && file.length() == 44L + dataSize) return file;
+        try (java.io.FileOutputStream out = new java.io.FileOutputStream(file)) {
+            writeLe(out, 0x46464952, 4); // RIFF
+            writeLe(out, 36 + dataSize, 4);
+            writeLe(out, 0x45564157, 4); // WAVE
+            writeLe(out, 0x20746D66, 4); // fmt
+            writeLe(out, 16, 4);
+            writeLe(out, 1, 2);
+            writeLe(out, channels, 2);
+            writeLe(out, sampleRate, 4);
+            writeLe(out, sampleRate * channels * bitsPerSample / 8, 4);
+            writeLe(out, channels * bitsPerSample / 8, 2);
+            writeLe(out, bitsPerSample, 2);
+            writeLe(out, 0x61746164, 4); // data
+            writeLe(out, dataSize, 4);
+            byte[] zeros = new byte[8192];
+            int remaining = dataSize;
+            while (remaining > 0) {
+                int count = Math.min(remaining, zeros.length);
+                out.write(zeros, 0, count);
+                remaining -= count;
+            }
+            out.flush();
+            return file;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private void writeLe(java.io.OutputStream out, long value, int bytes)
+            throws java.io.IOException {
+        for (int i = 0; i < bytes; i++) {
+            out.write((int) (value & 0xFF));
+            value >>= 8;
+        }
+    }
+
     private boolean isVideo(String uri) {
         String type = getContentResolver().getType(Uri.parse(uri));
         return type != null && type.startsWith("video/");
@@ -433,8 +495,48 @@ public class ExportActivity extends AppCompatActivity {
             return;
         }
 
-        EditedMediaItemSequence sequence = new EditedMediaItemSequence(items);
-        Composition.Builder compositionBuilder = new Composition.Builder(sequence);
+        EditedMediaItemSequence videoSequence = new EditedMediaItemSequence(items);
+        List<EditedMediaItemSequence> compositionSequences = new ArrayList<>();
+        compositionSequences.add(videoSequence);
+        int exportedAudioTracks = 0;
+        for (AudioTrackItem track : project.audioTracks) {
+            if (track == null || track.uri == null || track.uri.isEmpty() || track.muted) {
+                continue;
+            }
+            long durationMs = getMediaDurationMs(track.uri);
+            if (durationMs <= 0L) {
+                continue;
+            }
+            List<EditedMediaItem> audioItems = new ArrayList<>();
+            long offsetMs = Math.max(0L, Math.min(1800000L, track.startMs));
+            if (offsetMs > 0L) {
+                File silence = createSilenceWav(offsetMs);
+                if (silence != null && silence.exists()) {
+                    MediaItem silenceItem = new MediaItem.Builder()
+                            .setUri(Uri.fromFile(silence))
+                            .build();
+                    audioItems.add(new EditedMediaItem.Builder(silenceItem)
+                            .setRemoveVideo(true)
+                            .build());
+                }
+            }
+            MediaItem audioMediaItem = new MediaItem.Builder()
+                    .setUri(Uri.parse(track.uri))
+                    .build();
+            long audioDurationUs = durationMs * 1000L;
+            List<AudioProcessor> trackAudioEffects = new ArrayList<>();
+            trackAudioEffects.add(new ClipAudioProcessor(track.volume, 0L, 0L, audioDurationUs));
+            EditedMediaItem audioEditedItem = new EditedMediaItem.Builder(audioMediaItem)
+                    .setRemoveVideo(true)
+                    .setEffects(new Effects(trackAudioEffects, Collections.emptyList()))
+                    .build();
+            audioItems.add(audioEditedItem);
+            if (!audioItems.isEmpty()) {
+                compositionSequences.add(new EditedMediaItemSequence(audioItems));
+                exportedAudioTracks++;
+            }
+        }
+        Composition.Builder compositionBuilder = new Composition.Builder(compositionSequences);
 
         // Render project text layers into the final MP4 across the composition timeline.
         float previewW = getIntent().getFloatExtra(EditorActivity.EXTRA_PREVIEW_W, 0f);
