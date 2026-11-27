@@ -1127,6 +1127,8 @@ public class EditorActivity extends AppCompatActivity {
                         android.widget.EditText endTime = new android.widget.EditText(this);
                         android.widget.EditText startX = new android.widget.EditText(this);
                         android.widget.EditText startY = new android.widget.EditText(this);
+                        android.widget.EditText startRotation = new android.widget.EditText(this);
+                        android.widget.EditText endRotation = new android.widget.EditText(this);
                         android.widget.EditText endX = new android.widget.EditText(this);
                         android.widget.EditText endY = new android.widget.EditText(this);
                         start.setHint("Start scale (1.0)"); end.setHint("End scale (1.25)");
@@ -1137,15 +1139,20 @@ public class EditorActivity extends AppCompatActivity {
                         endTime.setText(String.valueOf(c.keyEndMs / 1000f));
                         startX.setHint("Start X (0.5)"); startY.setHint("Start Y (0.5)");
                         endX.setHint("End X (0.5)"); endY.setHint("End Y (0.5)");
+                        startRotation.setHint("Start rotation (degrees)");
+                        endRotation.setHint("End rotation (degrees)");
                         start.setInputType(8194); end.setInputType(8194);
                         startX.setInputType(8194); startY.setInputType(8194);
                         endX.setInputType(8194); endY.setInputType(8194);
+                        startRotation.setInputType(8194); endRotation.setInputType(8194);
                         start.setText(String.valueOf(c.keyStartScale));
                         end.setText(String.valueOf(c.keyEndScale));
                         startX.setText(String.valueOf(c.keyStartX));
                         startY.setText(String.valueOf(c.keyStartY));
                         endX.setText(String.valueOf(c.keyEndX));
                         endY.setText(String.valueOf(c.keyEndY));
+                        startRotation.setText(String.valueOf(c.keyStartRotation));
+                        endRotation.setText(String.valueOf(c.keyEndRotation));
                         box.addView(start); box.addView(end);
                         box.addView(startTime); box.addView(endTime);
                         TextView easingButton = new TextView(this);
@@ -1164,6 +1171,7 @@ public class EditorActivity extends AppCompatActivity {
                         box.addView(easingButton);
                         box.addView(startX); box.addView(startY);
                         box.addView(endX); box.addView(endY);
+                        box.addView(startRotation); box.addView(endRotation);
                         new AlertDialog.Builder(this).setTitle("Keyframe Scale & Position").setView(box)
                                 .setPositiveButton("Save", (d, w) -> {
                                     try {
@@ -1173,6 +1181,8 @@ public class EditorActivity extends AppCompatActivity {
                                         float y0 = Float.parseFloat(startY.getText().toString());
                                         float x1 = Float.parseFloat(endX.getText().toString());
                                         float y1 = Float.parseFloat(endY.getText().toString());
+                                        float r0 = Float.parseFloat(startRotation.getText().toString());
+                                        float r1 = Float.parseFloat(endRotation.getText().toString());
                                         float t0 = Float.parseFloat(startTime.getText().toString());
                                         float t1 = Float.parseFloat(endTime.getText().toString());
                                         if (t0 < 0f || t1 <= t0) throw new IllegalArgumentException("Invalid keyframe timing");
@@ -1183,14 +1193,16 @@ public class EditorActivity extends AppCompatActivity {
                                         c.keyStartY = Math.max(0f, Math.min(1f, y0));
                                         c.keyEndX = Math.max(0f, Math.min(1f, x1));
                                         c.keyEndY = Math.max(0f, Math.min(1f, y1));
+                                        c.keyStartRotation = Math.max(-3600f, Math.min(3600f, r0));
+                                        c.keyEndRotation = Math.max(-3600f, Math.min(3600f, r1));
                                         long clipLen = Math.max(100L, clipDurationMs(c));
                                         c.keyStartMs = Math.min(clipLen, Math.round(t0 * 1000f));
                                         c.keyEndMs = Math.min(clipLen, Math.max(c.keyStartMs + 100L, Math.round(t1 * 1000f)));
                                         c.keyEasing = chosenEasing[0];
                                         saveProject(false); refreshStrip();
-                                        toast("Keyframe scale, position, timing and easing saved for export.");
+                                        toast("Keyframe scale, position, rotation, timing and easing saved for export.");
                                     } catch (Exception ex) {
-                                        toast("Scale 0.25-4, X/Y 0-1 aur valid start/end seconds enter karein");
+                                        toast("Scale 0.25-4, X/Y 0-1, rotation ±3600° aur valid start/end seconds enter karein");
                                     }
                                 }).setNegativeButton("Cancel", null).show();
                     } else if (which == 2) {

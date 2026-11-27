@@ -281,6 +281,9 @@ public class ExportActivity extends AppCompatActivity {
             boolean hasKeyframes = Math.abs(c.keyStartScale - c.keyEndScale) > 0.001f
                     || Math.abs(c.keyStartX - c.keyEndX) > 0.001f
                     || Math.abs(c.keyStartY - c.keyEndY) > 0.001f
+                    || Math.abs(c.keyStartRotation - c.keyEndRotation) > 0.001f
+                    || Math.abs(c.keyStartRotation) > 0.001f
+                    || Math.abs(c.keyEndRotation) > 0.001f
                     || Math.abs(c.keyStartScale - 1f) > 0.001f
                     || Math.abs(c.keyEndScale - 1f) > 0.001f
                     || Math.abs(c.keyStartX - 0.5f) > 0.001f
@@ -306,9 +309,12 @@ public class ExportActivity extends AppCompatActivity {
                                 + (c.keyEndScale - c.keyStartScale) * progress;
                         float x = c.keyStartX + (c.keyEndX - c.keyStartX) * progress;
                         float y = c.keyStartY + (c.keyEndY - c.keyStartY) * progress;
+                        float rotation = c.keyStartRotation
+                                + (c.keyEndRotation - c.keyStartRotation) * progress;
                         Matrix matrix = new Matrix();
                         matrix.setScale(Math.max(0.25f, Math.min(4f, scale)),
                                 Math.max(0.25f, Math.min(4f, scale)));
+                        matrix.postRotate(rotation);
                         matrix.postTranslate((x - 0.5f) * 2f, (0.5f - y) * 2f);
                         return matrix;
                     }

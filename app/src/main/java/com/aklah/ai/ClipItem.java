@@ -31,6 +31,7 @@ public class ClipItem {
     public int maskMode = 0;
     public float maskX = 0.25f, maskY = 0.25f, maskWidth = 0.5f, maskHeight = 0.5f;
     public float keyStartScale = 1f, keyEndScale = 1f;
+    public float keyStartRotation = 0f, keyEndRotation = 0f;
     public float keyStartX = 0.5f, keyStartY = 0.5f, keyEndX = 0.5f, keyEndY = 0.5f;
     public long keyStartMs = 0L, keyEndMs = 1000L;
     public int keyEasing = 0; // 0 linear, 1 ease-in, 2 ease-out, 3 ease-in-out
@@ -67,6 +68,7 @@ public class ClipItem {
         copy.maskEnabled = maskEnabled; copy.maskMode = maskMode;
         copy.maskX = maskX; copy.maskY = maskY; copy.maskWidth = maskWidth; copy.maskHeight = maskHeight;
         copy.keyStartScale = keyStartScale; copy.keyEndScale = keyEndScale;
+        copy.keyStartRotation = keyStartRotation; copy.keyEndRotation = keyEndRotation;
         copy.keyStartX = keyStartX; copy.keyStartY = keyStartY; copy.keyEndX = keyEndX; copy.keyEndY = keyEndY;
         copy.keyStartMs = keyStartMs; copy.keyEndMs = keyEndMs; copy.keyEasing = keyEasing;
         return copy;
