@@ -266,28 +266,47 @@ public class ExportActivity extends AppCompatActivity {
                     maskCanvas.drawCircle((left + right) / 2f, (top + bottom) / 2f,
                             radius, maskPaint);
                 } else if (c.maskMode == 3) {
-                    // Offline satisfying-style pattern cover (static geometric mosaic).
+                    // Static satisfying geometric mosaic cover.
                     maskCanvas.save();
                     maskCanvas.clipRect(left, top, right, bottom);
-                    int[] colors = {
-                            0xFFFFD166, 0xFF06D6A0, 0xFF118AB2,
-                            0xFFEF476F, 0xFF9B5DE5, 0xFFF15BB5
-                    };
+                    int[] colors = {0xFFFFD166, 0xFF06D6A0, 0xFF118AB2, 0xFFEF476F, 0xFF9B5DE5, 0xFFF15BB5};
                     Paint pattern = new Paint(Paint.ANTI_ALIAS_FLAG);
                     pattern.setStyle(Paint.Style.FILL);
                     float cell = Math.max(70f, Math.min(right - left, bottom - top) / 4f);
-                    for (int row = -1; row < 16; row++) {
-                        for (int col = -1; col < 24; col++) {
-                            pattern.setColor(colors[Math.floorMod(row * 3 + col, colors.length)]);
-                            float cx = left + col * cell + cell / 2f;
-                            float cy = top + row * cell + cell / 2f;
-                            float radius = cell * (0.28f + ((row + col) & 1) * 0.12f);
-                            maskCanvas.drawCircle(cx, cy, radius, pattern);
-                        }
+                    for (int row = -1; row < 16; row++) for (int col = -1; col < 24; col++) {
+                        pattern.setColor(colors[Math.floorMod(row * 3 + col, colors.length)]);
+                        float cx = left + col * cell + cell / 2f;
+                        float cy = top + row * cell + cell / 2f;
+                        float radius = cell * (0.28f + ((row + col) & 1) * 0.12f);
+                        maskCanvas.drawCircle(cx, cy, radius, pattern);
                     }
                     maskCanvas.restore();
+                } else if (c.maskMode == 4) {
+                    // Creator silhouette cutout with layered red glow rings.
+                    float cx = (left + right) / 2f;
+                    float headR = Math.min(right - left, bottom - top) * 0.19f;
+                    float headCy = top + (bottom - top) * 0.30f;
+                    Paint glow = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    glow.setStyle(Paint.Style.STROKE);
+                    for (int i = 12; i >= 1; i--) {
+                        glow.setColor(0x22FF173B);
+                        glow.setStrokeWidth(headR * (0.10f + i * 0.045f));
+                        maskCanvas.drawCircle(cx, headCy, headR * (1.28f + i * 0.055f), glow);
+                    }
+                    glow.setColor(0xFFFF234B);
+                    glow.setStrokeWidth(Math.max(12f, headR * 0.12f));
+                    maskCanvas.drawCircle(cx, headCy, headR * 1.28f, glow);
+                    Paint silhouette = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    silhouette.setColor(0xFF030306);
+                    silhouette.setStyle(Paint.Style.FILL);
+                    maskCanvas.drawCircle(cx, headCy, headR, silhouette);
+                    android.graphics.Path shoulders = new android.graphics.Path();
+                    shoulders.moveTo(left + (right-left)*0.08f, bottom);
+                    shoulders.quadTo(left + (right-left)*0.12f, top + (bottom-top)*0.55f, cx, top + (bottom-top)*0.54f);
+                    shoulders.quadTo(right - (right-left)*0.12f, top + (bottom-top)*0.55f, right - (right-left)*0.08f, bottom);
+                    shoulders.close();
+                    maskCanvas.drawPath(shoulders, silhouette);
                 } else {
-                    // Rectangle and black privacy cover conceal the selected region.
                     maskCanvas.drawRect(left, top, right, bottom, maskPaint);
                 }
                 TextureOverlay maskOverlay = BitmapOverlay.createStaticBitmapOverlay(maskBitmap);
