@@ -6,6 +6,8 @@ public class AudioTrackItem {
     public float volume = 1f;
     public long startMs = 0L;
     public boolean muted = false;
+    public long fadeInMs = 0L;
+    public long fadeOutMs = 0L;
 
     public AudioTrackItem(String uri) {
         this.uri = uri;
