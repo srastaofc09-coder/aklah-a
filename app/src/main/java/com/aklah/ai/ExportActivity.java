@@ -220,11 +220,16 @@ public class ExportActivity extends AppCompatActivity {
             int cw = 1280, ch = 720;
             Bitmap out = Bitmap.createBitmap(cw, ch, Bitmap.Config.ARGB_8888);
             Canvas canvas = new Canvas(out);
-            float maxW = cw * 0.28f, maxH = ch * 0.28f;
+            float size = Math.max(0.08f, Math.min(0.65f, project.photoOverlaySize));
+            float maxW = cw * size, maxH = ch * size;
             float scale = Math.min(maxW / source.getWidth(), maxH / source.getHeight());
-            float w = source.getWidth() * scale, h = source.getHeight() * scale, margin = 32f;
-            RectF dst = new RectF(cw - margin - w, ch - margin - h, cw - margin, ch - margin);
-            canvas.drawBitmap(source, null, dst, new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG));
+            float w = source.getWidth() * scale, h = source.getHeight() * scale;
+            float cx = Math.max(0.02f, Math.min(0.98f, project.photoOverlayX)) * cw;
+            float cy = Math.max(0.02f, Math.min(0.98f, project.photoOverlayY)) * ch;
+            RectF dst = new RectF(cx - w / 2f, cy - h / 2f, cx + w / 2f, cy + h / 2f);
+            Paint pipPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+            pipPaint.setAlpha(Math.max(0, Math.min(255, Math.round(project.photoOverlayOpacity * 255f))));
+            canvas.drawBitmap(source, null, dst, pipPaint);
             return out;
         } catch (Exception ignored) { return null; }
         finally { if (source != null && !source.isRecycled()) source.recycle(); }

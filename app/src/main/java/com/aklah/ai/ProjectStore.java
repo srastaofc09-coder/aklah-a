@@ -27,6 +27,10 @@ public class ProjectStore {
                         o.getLong("createdAt"));
                 p.canvasMode = o.optInt("canvasMode", 0);
                 p.photoOverlayUri = o.optString("photoOverlayUri", "");
+                p.photoOverlayX = (float) o.optDouble("photoOverlayX", 0.82);
+                p.photoOverlayY = (float) o.optDouble("photoOverlayY", 0.78);
+                p.photoOverlaySize = (float) o.optDouble("photoOverlaySize", 0.28);
+                p.photoOverlayOpacity = (float) o.optDouble("photoOverlayOpacity", 1.0);
                 JSONArray media = o.optJSONArray("media");
                 if (media != null) {
                     for (int j = 0; j < media.length(); j++) {
@@ -145,6 +149,10 @@ public class ProjectStore {
                 o.put("createdAt", p.createdAt);
                 o.put("canvasMode", p.canvasMode);
                 o.put("photoOverlayUri", p.photoOverlayUri == null ? "" : p.photoOverlayUri);
+                o.put("photoOverlayX", p.photoOverlayX);
+                o.put("photoOverlayY", p.photoOverlayY);
+                o.put("photoOverlaySize", p.photoOverlaySize);
+                o.put("photoOverlayOpacity", p.photoOverlayOpacity);
                 JSONArray media = new JSONArray();
                 for (String u : p.mediaUris) {
                     media.put(u);

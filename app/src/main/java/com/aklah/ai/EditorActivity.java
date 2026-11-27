@@ -65,6 +65,8 @@ public class EditorActivity extends AppCompatActivity {
         final List<TextLayer> texts = new ArrayList<>();
         final List<AudioTrackItem> audioTracks = new ArrayList<>();
         int canvasMode;
+        String photoOverlayUri;
+        float photoOverlayX, photoOverlayY, photoOverlaySize, photoOverlayOpacity;
     }
     private final Deque<EditorSnapshot> undoStack = new ArrayDeque<>();
     private final Deque<EditorSnapshot> redoStack = new ArrayDeque<>();
@@ -245,6 +247,7 @@ public class EditorActivity extends AppCompatActivity {
         addButton(r7, "Subtitle", () -> addSubtitleAtPlayhead());
         addButton(r7, "Photo Overlay / PIP", () -> choosePhotoOverlay());
         addButton(r7, "Remove Photo PIP", () -> removePhotoOverlay());
+        addButton(r7, "PIP Position / Size", () -> showPhotoPipControls());
         addButton(r7, "Audio Tracks", () -> manageAudioTracks());
         addButton(r7, "Voice-over REC", () -> toggleVoiceRecording());
         addButton(r7, "Keyframe / Transition", () -> showAdvancedManualBatch());
@@ -278,7 +281,7 @@ public class EditorActivity extends AppCompatActivity {
         });
         reload(0, 0);
         View previewStage = findViewById(R.id.previewStage);
-        if (previewStage != null) previewStage.post(() -> applyPreviewCanvas());
+        if (previewStage != null) previewStage.post(() -> { applyPreviewCanvas(); showPhotoOverlayPreview(); });
         handler.post(tick);
     }
 
@@ -588,6 +591,13 @@ public class EditorActivity extends AppCompatActivity {
     private EditorSnapshot captureEditorSnapshot() {
         EditorSnapshot state = new EditorSnapshot();
         state.canvasMode = project != null ? project.canvasMode : 0;
+        if (project != null) {
+            state.photoOverlayUri = project.photoOverlayUri;
+            state.photoOverlayX = project.photoOverlayX;
+            state.photoOverlayY = project.photoOverlayY;
+            state.photoOverlaySize = project.photoOverlaySize;
+            state.photoOverlayOpacity = project.photoOverlayOpacity;
+        }
         for (ClipItem clip : clips) state.clips.add(clip.copy());
         for (TextLayer layer : texts) state.texts.add(layer.copy());
         if (project != null && project.audioTracks != null) {
@@ -605,6 +615,12 @@ public class EditorActivity extends AppCompatActivity {
         for (TextLayer layer : state.texts) texts.add(layer.copy());
         if (project != null) {
             project.canvasMode = state.canvasMode;
+            project.photoOverlayUri = state.photoOverlayUri == null ? "" : state.photoOverlayUri;
+            project.photoOverlayX = state.photoOverlayX;
+            project.photoOverlayY = state.photoOverlayY;
+            project.photoOverlaySize = state.photoOverlaySize;
+            project.photoOverlayOpacity = state.photoOverlayOpacity;
+            showPhotoOverlayPreview();
             project.audioTracks.clear();
             for (AudioTrackItem track : state.audioTracks) project.audioTracks.add(track.copy());
         }
@@ -3078,10 +3094,91 @@ public class EditorActivity extends AppCompatActivity {
     }
 
     private void showPhotoOverlayPreview() {
-        if (photoOverlayPreview == null) return;
-        String uri = project == null ? "" : project.photoOverlayUri;
-        if (uri == null || uri.isEmpty()) { photoOverlayPreview.setImageDrawable(null); photoOverlayPreview.setVisibility(View.GONE); return; }
-        photoOverlayPreview.setImageURI(Uri.parse(uri)); photoOverlayPreview.setVisibility(View.VISIBLE);
+        if (photoOverlayPreview == null || project == null) return;
+        String uri = project.photoOverlayUri == null ? "" : project.photoOverlayUri;
+        if (uri.isEmpty()) {
+            photoOverlayPreview.setImageDrawable(null);
+            photoOverlayPreview.setVisibility(View.GONE);
+            return;
+        }
+        photoOverlayPreview.setImageURI(Uri.parse(uri));
+        photoOverlayPreview.setVisibility(View.VISIBLE);
+        photoOverlayPreview.setAlpha(Math.max(0f, Math.min(1f, project.photoOverlayOpacity)));
+        FrameLayout stage = findViewById(R.id.previewStage);
+        if (stage != null) {
+            int w = Math.max(dp(64), (int) (stage.getWidth() * project.photoOverlaySize));
+            int h = Math.max(dp(64), (int) (stage.getHeight() * project.photoOverlaySize));
+            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(w, h);
+            float cx = Math.max(0.08f, Math.min(0.92f, project.photoOverlayX));
+            float cy = Math.max(0.08f, Math.min(0.92f, project.photoOverlayY));
+            lp.leftMargin = Math.max(0, Math.min(stage.getWidth() - w, (int) (stage.getWidth() * cx - w / 2f)));
+            lp.topMargin = Math.max(0, Math.min(stage.getHeight() - h, (int) (stage.getHeight() * cy - h / 2f)));
+            photoOverlayPreview.setLayoutParams(lp);
+        }
+        photoOverlayPreview.setOnTouchListener((v, event) -> {
+            FrameLayout parent = (FrameLayout) v.getParent();
+            if (parent == null) return false;
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                dragging = true;
+                return true;
+            }
+            if (event.getAction() == MotionEvent.ACTION_MOVE && dragging) {
+                float cx = v.getX() + event.getX();
+                float cy = v.getY() + event.getY();
+                project.photoOverlayX = Math.max(0.05f, Math.min(0.95f, cx / Math.max(1, parent.getWidth())));
+                project.photoOverlayY = Math.max(0.05f, Math.min(0.95f, cy / Math.max(1, parent.getHeight())));
+                FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) v.getLayoutParams();
+                lp.leftMargin = Math.max(0, Math.min(parent.getWidth() - v.getWidth(), (int) (cx - v.getWidth() / 2f)));
+                lp.topMargin = Math.max(0, Math.min(parent.getHeight() - v.getHeight(), (int) (cy - v.getHeight() / 2f)));
+                v.setLayoutParams(lp);
+                return true;
+            }
+            if (event.getAction() == MotionEvent.ACTION_UP) {
+                dragging = false;
+                saveProject(false);
+                return true;
+            }
+            return true;
+        });
+    }
+
+    private void showPhotoPipControls() {
+        if (project == null || project.photoOverlayUri == null || project.photoOverlayUri.isEmpty()) {
+            toast("Pehle Photo Overlay / PIP add karein");
+            return;
+        }
+        final String[] actions = {"Position preset", "Size", "Opacity", "Reset"};
+        new AlertDialog.Builder(this).setTitle("Photo PIP • Customize")
+                .setItems(actions, (dialog, which) -> {
+                    if (which == 0) {
+                        final String[] positions = {"Top left", "Top right", "Bottom left", "Bottom right", "Center"};
+                        new AlertDialog.Builder(this).setTitle("PIP position")
+                                .setItems(positions, (d, p) -> {
+                                    pushUndo();
+                                    float[][] xy = {{0.20f,0.22f},{0.80f,0.22f},{0.20f,0.78f},{0.80f,0.78f},{0.50f,0.50f}};
+                                    project.photoOverlayX = xy[p][0]; project.photoOverlayY = xy[p][1];
+                                    showPhotoOverlayPreview(); saveProject(false);
+                                }).show();
+                    } else if (which == 1) {
+                        final String[] sizes = {"Small 18%", "Medium 28%", "Large 40%", "Extra large 52%"};
+                        new AlertDialog.Builder(this).setTitle("PIP size")
+                                .setSingleChoiceItems(sizes, Math.max(0, Math.min(3, Math.round(project.photoOverlaySize * 100f / 14f) - 1)), (d, p) -> {
+                                    pushUndo(); project.photoOverlaySize = new float[]{0.18f,0.28f,0.40f,0.52f}[p];
+                                    showPhotoOverlayPreview(); saveProject(false); d.dismiss();
+                                }).setNegativeButton("Cancel", null).show();
+                    } else if (which == 2) {
+                        final String[] opacity = {"100%", "80%", "60%", "40%", "20%"};
+                        new AlertDialog.Builder(this).setTitle("PIP opacity")
+                                .setSingleChoiceItems(opacity, Math.max(0, Math.min(4, Math.round((1f-project.photoOverlayOpacity)/0.2f))), (d, p) -> {
+                                    pushUndo(); project.photoOverlayOpacity = new float[]{1f,.8f,.6f,.4f,.2f}[p];
+                                    showPhotoOverlayPreview(); saveProject(false); d.dismiss();
+                                }).setNegativeButton("Cancel", null).show();
+                    } else {
+                        pushUndo(); project.photoOverlayX = .82f; project.photoOverlayY = .78f;
+                        project.photoOverlaySize = .28f; project.photoOverlayOpacity = 1f;
+                        showPhotoOverlayPreview(); saveProject(false);
+                    }
+                }).show();
     }
 
     private void openExport() {
