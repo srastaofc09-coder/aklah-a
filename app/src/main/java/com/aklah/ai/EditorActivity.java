@@ -33,6 +33,7 @@ import androidx.media3.common.Player;
 import androidx.media3.common.Timeline;
 import androidx.media3.common.VideoSize;
 import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.ui.AspectRatioFrameLayout;
 import androidx.media3.ui.PlayerView;
 
 import java.util.ArrayDeque;
@@ -1408,6 +1409,9 @@ public class EditorActivity extends AppCompatActivity {
             return;
         }
         float ratio = canvasAspectRatio();
+        ((PlayerView) video).setResizeMode(ratio > 0f
+                ? AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                : AspectRatioFrameLayout.RESIZE_MODE_FIT);
         int w = stageW;
         int h = stageH;
         if (ratio > 0f) {
