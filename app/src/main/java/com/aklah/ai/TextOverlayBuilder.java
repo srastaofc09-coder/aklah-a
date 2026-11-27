@@ -63,14 +63,24 @@ public class TextOverlayBuilder {
                     float scaleValue = 1f;
                     float x = baseX;
                     float y = baseY;
-                    if (animationMode == 1 || animationMode == 4) {
+                    if (animationMode == 1 || animationMode == 4 || animationMode == 5
+                            || animationMode == 6 || animationMode == 7 || animationMode == 8) {
                         alpha = progress;
-                    } else if (animationMode == 2) {
+                    }
+                    if (animationMode == 2) {
                         y = baseY - (1f - progress) * 0.35f;
-                        alpha = progress;
                     } else if (animationMode == 3) {
                         scaleValue = 0.65f + 0.35f * progress;
-                        alpha = progress;
+                    } else if (animationMode == 5) {
+                        // Soft bounce settles into the final scale during the intro.
+                        float bounce = (float) Math.abs(Math.sin(progress * Math.PI * 3.0));
+                        scaleValue = progress >= 1f ? 1f : 0.72f + 0.28f * progress + 0.12f * bounce * (1f - progress);
+                    } else if (animationMode == 6) {
+                        x = baseX - (1f - progress) * 0.45f;
+                    } else if (animationMode == 7) {
+                        x = baseX + (1f - progress) * 0.45f;
+                    } else if (animationMode == 8) {
+                        y = baseY + (1f - progress) * 0.35f;
                     }
                     if (animationMode == 4 && endUs != Long.MAX_VALUE) {
                         long remainingUs = Math.max(0L, endUs - presentationTimeUs);

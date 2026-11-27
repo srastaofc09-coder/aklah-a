@@ -17,7 +17,7 @@ public class TextLayer {
     public int align = 1; // 0 left, 1 center, 2 right
     public float xFrac = 0.5f;
     public float yFrac = 0.5f;
-    public int animationMode = 0; // 0 none, 1 fade, 2 slide up, 3 zoom, 4 fade in/out
+    public int animationMode = 0; // 0 none, 1 fade, 2 slide up, 3 zoom, 4 fade in/out, 5 bounce, 6 slide left, 7 slide right, 8 slide down
     public long animationDurationMs = 600L;
 
     public TextLayer(String text) {

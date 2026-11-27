@@ -180,8 +180,8 @@ public class TextDialog {
 
         // Text animation presets and timing
         root.addView(label(ctx, "Text Animation (export mein apply hoga)"));
-        final int[] animationMode = {Math.max(0, Math.min(4, layer.animationMode))};
-        root.addView(chips(ctx, new String[]{"None", "Fade", "Slide", "Zoom", "In/Out"}, animationMode));
+        final int[] animationMode = {Math.max(0, Math.min(8, layer.animationMode))};
+        root.addView(chips(ctx, new String[]{"None", "Fade", "Up", "Zoom", "In/Out", "Bounce", "Left", "Right", "Down"}, animationMode));
         root.addView(label(ctx, "Animation duration (ms)"));
         final EditText animationDuration = numberField(ctx, "Duration ms",
                 String.valueOf(Math.max(100L, Math.min(5000L, layer.animationDurationMs))));
