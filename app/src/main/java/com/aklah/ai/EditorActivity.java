@@ -2272,13 +2272,100 @@ public class EditorActivity extends AppCompatActivity {
                     clipWidth, (int) (56 * d));
             lp.setMargins((int) (3 * d), 0, (int) (3 * d), 0);
             t.setLayoutParams(lp);
-            t.setOnClickListener(v -> {
-                if (player != null) {
-                    player.seekToDefaultPosition(idx);
-                }
-            });
+            installVideoClipGesture(t, idx);
             strip.addView(t);
         }
+    }
+
+
+    // Drag a video block to reorder the main sequence; drag its left/right edge to trim.
+    private void installVideoClipGesture(TextView block, int clipIndex) {
+        final float[] downX = new float[1];
+        final float[] lastX = new float[1];
+        final int[] mode = new int[1]; // 0 tap, 1 move/reorder, 2 trim-start, 3 trim-end
+        final boolean[] moved = new boolean[1];
+        final int edge = dp(18);
+        block.setOnTouchListener((view, event) -> {
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    downX[0] = event.getRawX();
+                    lastX[0] = 0f;
+                    moved[0] = false;
+                    float localX = event.getX();
+                    mode[0] = localX <= edge ? 2
+                            : localX >= view.getWidth() - edge ? 3 : 1;
+                    return true;
+                case MotionEvent.ACTION_MOVE:
+                    float dx = event.getRawX() - downX[0];
+                    if (Math.abs(dx) > dp(7)) moved[0] = true;
+                    if (moved[0]) {
+                        lastX[0] = dx;
+                        view.setTranslationX(dx);
+                        view.setAlpha(0.78f);
+                    }
+                    return true;
+                case MotionEvent.ACTION_UP:
+                    view.setTranslationX(0f);
+                    view.setAlpha(1f);
+                    if (!moved[0]) {
+                        if (player != null && clipIndex < clips.size())
+                            player.seekToDefaultPosition(clipIndex);
+                        view.performClick();
+                        return true;
+                    }
+                    if (clipIndex < 0 || clipIndex >= clips.size()) return true;
+                    float density = getResources().getDisplayMetrics().density;
+                    long deltaMs = Math.round((lastX[0] / density)
+                            / Math.max(1f, 32f * timelineZoom) * 1000f);
+                    pushUndo();
+                    if (mode[0] == 2 || mode[0] == 3) {
+                        ClipItem clip = clips.get(clipIndex);
+                        long sourceDuration = getMediaDurationMs(clip.uri);
+                        long sourceEnd = clip.endMs >= 0 ? clip.endMs : sourceDuration;
+                        if (sourceEnd <= 0L) sourceEnd = clip.startMs + 1000L;
+                        if (mode[0] == 2) {
+                            long newStart = Math.max(0L, Math.min(sourceEnd - 300L,
+                                    clip.startMs + deltaMs));
+                            clip.startMs = newStart;
+                        } else {
+                            long newEnd = Math.max(clip.startMs + 300L,
+                                    sourceEnd + deltaMs);
+                            if (sourceDuration > 0L) newEnd = Math.min(sourceDuration, newEnd);
+                            clip.endMs = newEnd;
+                        }
+                        reload(clipIndex, 0L);
+                        toast(mode[0] == 2 ? "Clip start trim updated" : "Clip end trim updated");
+                    } else {
+                        int target = clipIndex;
+                        int[] location = new int[2];
+                        strip.getLocationOnScreen(location);
+                        float draggedCenter = event.getRawX() - location[0]
+                                + block.getLeft() + block.getWidth() / 2f + lastX[0];
+                        for (int j = 0; j < strip.getChildCount(); j++) {
+                            View child = strip.getChildAt(j);
+                            if (draggedCenter > child.getLeft() + child.getWidth() / 2f)
+                                target = j;
+                        }
+                        if (target != clipIndex) {
+                            ClipItem movedClip = clips.remove(clipIndex);
+                            clips.add(Math.max(0, Math.min(target, clips.size())), movedClip);
+                            reload(target, 0L);
+                            toast("Video clip reordered");
+                        } else {
+                            refreshStrip();
+                        }
+                    }
+                    saveProject(false);
+                    refreshStrip();
+                    return true;
+                case MotionEvent.ACTION_CANCEL:
+                    view.setTranslationX(0f);
+                    view.setAlpha(1f);
+                    return true;
+                default:
+                    return true;
+            }
+        });
     }
 
     // Compact independent layer lanes for music and text overlays.
