@@ -153,6 +153,7 @@ public class EditorActivity extends AppCompatActivity {
         addButton(r7, "Audio Tracks", () -> manageAudioTracks());
         addButton(r3, "Project Save Karein", () -> saveProject(true));
         addButton(r3, "Export MP4", () -> openExport());
+        setupToolCategories();
 
         rebuildOverlay();
     }
@@ -1805,6 +1806,57 @@ public class EditorActivity extends AppCompatActivity {
 
     private String sec(long ms) {
         return String.format(Locale.US, "%.1fs", ms / 1000f);
+    }
+
+    private void setupToolCategories() {
+        LinearLayout tabs = findViewById(R.id.toolCategories);
+        if (tabs == null) return;
+        final String[] names = {"Edit", "Text", "Overlay", "Audio", "More"};
+        final int[][] groups = {
+                {R.id.row1Scroll, R.id.row2Scroll},
+                {R.id.row4Scroll},
+                {R.id.row7Scroll},
+                {R.id.row5Scroll, R.id.row7Scroll},
+                {R.id.row6Scroll}
+        };
+        final int[] selected = {0};
+        Runnable[] refresh = new Runnable[1];
+        refresh[0] = () -> {
+            for (int id : new int[]{R.id.row1Scroll, R.id.row2Scroll, R.id.row4Scroll,
+                    R.id.row5Scroll, R.id.row7Scroll, R.id.row6Scroll}) {
+                View panel = findViewById(id);
+                if (panel != null) panel.setVisibility(View.GONE);
+            }
+            for (int id : groups[selected[0]]) {
+                View panel = findViewById(id);
+                if (panel != null) panel.setVisibility(View.VISIBLE);
+            }
+            for (int i = 0; i < tabs.getChildCount(); i++) {
+                TextView tab = (TextView) tabs.getChildAt(i);
+                boolean active = i == selected[0];
+                tab.setTextColor(active ? 0xFF111319 : 0xFFB5BAC5);
+                tab.setBackground(roundRect(active ? 0xFFFFD66B : 0xFF171A20,
+                        active ? 0xFFFFD66B : 0xFF30343D, 1, 16));
+            }
+        };
+        tabs.removeAllViews();
+        for (int i = 0; i < names.length; i++) {
+            final int index = i;
+            TextView tab = new TextView(this);
+            tab.setText(names[i]);
+            tab.setGravity(Gravity.CENTER);
+            tab.setTextSize(13);
+            tab.setTypeface(null, Typeface.BOLD);
+            tab.setPadding(dp(16), 0, dp(16), 0);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(78), dp(36));
+            lp.setMargins(dp(3), dp(4), dp(3), dp(4));
+            tabs.addView(tab, lp);
+            tab.setOnClickListener(v -> {
+                selected[0] = index;
+                refresh[0].run();
+            });
+        }
+        refresh[0].run();
     }
 
     private void updateTimelineUi() {
