@@ -1541,14 +1541,16 @@ public class EditorActivity extends AppCompatActivity {
         final String[] names = {
                 "Normal", "Black & White", "Cinematic", "Warm Film",
                 "Cool Blue", "Bright Clean", "Vintage Soft", "High Contrast",
-                "Warm Amber", "Ice Blue", "Teal & Orange", "Soft Dream"
+                "Warm Amber", "Ice Blue", "Teal & Orange", "Soft Dream",
+                "Golden Hour", "Matte Fade", "Noir Drama", "Retro 90s",
+                "Pastel Air", "Moody Green", "Sunset Glow", "Oceanic",
+                "Rose Gold", "Desert Sand", "Neon Night", "Faithful Natural"
         };
         new AlertDialog.Builder(this)
-                .setTitle("Quick Filter Presets")
+                .setTitle("FILTER STUDIO • 24 LOOKS")
                 .setItems(names, (dialog, which) -> {
                     pushUndo();
-                    // Every preset starts from a clean baseline so previous RGB/blur
-                    // settings cannot accidentally leak into the next selected preset.
+                    // Reset every supported color channel before applying a preset.
                     clip.redScale = 1f;
                     clip.greenScale = 1f;
                     clip.blueScale = 1f;
@@ -1557,8 +1559,8 @@ public class EditorActivity extends AppCompatActivity {
                         case 0: clip.brightness=0f; clip.contrast=1f; clip.saturation=1f; break;
                         case 1: clip.brightness=0f; clip.contrast=1.12f; clip.saturation=0f; break;
                         case 2: clip.brightness=-0.04f; clip.contrast=1.28f; clip.saturation=0.82f; break;
-                        case 3: clip.brightness=0.06f; clip.contrast=1.08f; clip.saturation=1.22f; break;
-                        case 4: clip.brightness=-0.03f; clip.contrast=1.12f; clip.saturation=0.88f; break;
+                        case 3: clip.brightness=0.06f; clip.contrast=1.08f; clip.saturation=1.22f; clip.redScale=1.12f; clip.blueScale=0.92f; break;
+                        case 4: clip.brightness=-0.03f; clip.contrast=1.12f; clip.saturation=0.88f; clip.redScale=0.92f; clip.blueScale=1.12f; break;
                         case 5: clip.brightness=0.18f; clip.contrast=1.02f; clip.saturation=1.08f; break;
                         case 6: clip.brightness=0.02f; clip.contrast=0.92f; clip.saturation=0.72f; break;
                         case 7: clip.brightness=-0.06f; clip.contrast=1.55f; clip.saturation=1.18f; break;
@@ -1566,10 +1568,31 @@ public class EditorActivity extends AppCompatActivity {
                         case 9: clip.brightness=0.02f; clip.contrast=1.05f; clip.saturation=0.92f; clip.redScale=0.88f; clip.greenScale=1.02f; clip.blueScale=1.18f; break;
                         case 10: clip.brightness=-0.02f; clip.contrast=1.2f; clip.saturation=1.1f; clip.redScale=1.15f; clip.greenScale=1.02f; clip.blueScale=0.88f; break;
                         case 11: clip.brightness=0.08f; clip.contrast=0.9f; clip.saturation=0.78f; clip.blurSigma=2.0f; break;
+                        case 12: clip.brightness=0.12f; clip.contrast=1.08f; clip.saturation=1.28f; clip.redScale=1.16f; clip.blueScale=0.84f; break;
+                        case 13: clip.brightness=0.04f; clip.contrast=0.82f; clip.saturation=0.68f; break;
+                        case 14: clip.brightness=-0.12f; clip.contrast=1.62f; clip.saturation=0.42f; break;
+                        case 15: clip.brightness=0.03f; clip.contrast=1.14f; clip.saturation=1.34f; clip.redScale=1.12f; clip.greenScale=0.98f; clip.blueScale=0.86f; break;
+                        case 16: clip.brightness=0.1f; clip.contrast=0.94f; clip.saturation=0.76f; clip.redScale=1.08f; clip.blueScale=1.04f; break;
+                        case 17: clip.brightness=-0.04f; clip.contrast=1.18f; clip.saturation=0.72f; clip.redScale=0.92f; clip.greenScale=1.12f; clip.blueScale=0.88f; break;
+                        case 18: clip.brightness=0.06f; clip.contrast=1.16f; clip.saturation=1.2f; clip.redScale=1.2f; clip.greenScale=1.02f; clip.blueScale=0.78f; break;
+                        case 19: clip.brightness=0.02f; clip.contrast=1.12f; clip.saturation=1.16f; clip.redScale=0.86f; clip.greenScale=1.08f; clip.blueScale=1.2f; break;
+                        case 20: clip.brightness=0.06f; clip.contrast=1.02f; clip.saturation=0.92f; clip.redScale=1.14f; clip.greenScale=0.98f; clip.blueScale=1.06f; break;
+                        case 21: clip.brightness=0.08f; clip.contrast=1.1f; clip.saturation=0.84f; clip.redScale=1.14f; clip.greenScale=1.04f; clip.blueScale=0.86f; break;
+                        case 22: clip.brightness=-0.08f; clip.contrast=1.42f; clip.saturation=1.3f; clip.redScale=1.12f; clip.greenScale=0.9f; clip.blueScale=1.18f; break;
+                        case 23: clip.brightness=0f; clip.contrast=1f; clip.saturation=1f; break;
                     }
                     saveProject(false);
-                    toast("Filter save ho gaya; MP4 export par apply hoga");
+                    toast("Filter saved • MP4 export mein apply hoga");
                 })
+                .setNeutralButton("Reset Filter", (dialog, which) -> {
+                    pushUndo();
+                    clip.brightness=0f; clip.contrast=1f; clip.saturation=1f;
+                    clip.redScale=1f; clip.greenScale=1f; clip.blueScale=1f;
+                    clip.blurSigma=0f;
+                    saveProject(false);
+                    toast("Filter reset ho gaya");
+                })
+                .setNegativeButton("Cancel", null)
                 .show();
     }
 
