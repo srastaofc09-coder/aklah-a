@@ -2443,18 +2443,7 @@ public class EditorActivity extends AppCompatActivity {
             lp.setMargins(offset, 0, dp(5), 0);
             textContent.addView(block, lp);
             block.setOnClickListener(v -> editText(layer));
-            installTimelineDrag(block, delta -> {
-                long dragTimelineDuration = totalTimelineDurationMs();
-                if (dragTimelineDuration <= 0L || dragTimelineDuration == C.TIME_UNSET) {
-                    dragTimelineDuration = 0L;
-                    for (ClipItem clip : clips) dragTimelineDuration += clipDurationMs(clip);
-                }
-                long durationMs = layer.endMs > layer.startMs
-                        ? layer.endMs - layer.startMs
-                        : Math.max(1000L, dragTimelineDuration - layer.startMs);
-                layer.startMs = Math.max(0L, layer.startMs + delta);
-                layer.endMs = layer.startMs + durationMs;
-            });
+            installTextTimelineGesture(block, layer);
         }
         lanes.post(() -> {
             timelineScrollSyncing = true;
@@ -2516,6 +2505,80 @@ public class EditorActivity extends AppCompatActivity {
         scroll.addView(content, new HorizontalScrollView.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.MATCH_PARENT));
         return content;
+    }
+
+
+    // Text blocks can be moved and trimmed directly from either timeline edge.
+    private void installTextTimelineGesture(View block, TextLayer layer) {
+        final float[] downX = new float[1];
+        final float[] deltaX = new float[1];
+        final int[] gesture = new int[1]; // 0 move, 1 trim-in, 2 trim-out
+        final boolean[] moved = new boolean[1];
+        final int edgeWidth = dp(18);
+        block.setOnTouchListener((view, event) -> {
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    downX[0] = event.getRawX();
+                    deltaX[0] = 0f;
+                    moved[0] = false;
+                    gesture[0] = event.getX() < edgeWidth ? 1
+                            : event.getX() > view.getWidth() - edgeWidth ? 2 : 0;
+                    return true;
+                case MotionEvent.ACTION_MOVE:
+                    float dx = event.getRawX() - downX[0];
+                    if (Math.abs(dx) > dp(7)) moved[0] = true;
+                    if (moved[0]) {
+                        deltaX[0] = dx;
+                        view.setTranslationX(dx);
+                        view.setAlpha(0.8f);
+                    }
+                    return true;
+                case MotionEvent.ACTION_UP:
+                    view.setTranslationX(0f);
+                    view.setAlpha(1f);
+                    if (!moved[0]) {
+                        view.performClick();
+                        return true;
+                    }
+                    float density = getResources().getDisplayMetrics().density;
+                    long delta = Math.round((deltaX[0] / density)
+                            / Math.max(1f, 32f * timelineZoom) * 1000f);
+                    long projectDuration = totalTimelineDurationMs();
+                    if (projectDuration <= 0L || projectDuration == C.TIME_UNSET) {
+                        projectDuration = 0L;
+                        for (ClipItem clip : clips) projectDuration += clipDurationMs(clip);
+                    }
+                    long oldStart = layer.startMs;
+                    long oldEnd = layer.endMs > layer.startMs ? layer.endMs
+                            : Math.max(layer.startMs + 1000L, projectDuration);
+                    pushUndo();
+                    if (gesture[0] == 1) {
+                        long newStart = Math.max(0L, Math.min(oldEnd - 300L, oldStart + delta));
+                        layer.startMs = newStart;
+                        layer.endMs = oldEnd;
+                    } else if (gesture[0] == 2) {
+                        long newEnd = Math.max(oldStart + 300L, oldEnd + delta);
+                        layer.startMs = oldStart;
+                        layer.endMs = Math.min(Math.max(newEnd, oldStart + 300L),
+                                Math.max(projectDuration, newEnd));
+                    } else {
+                        layer.startMs = Math.max(0L, oldStart + delta);
+                        layer.endMs = layer.startMs + (oldEnd - oldStart);
+                    }
+                    saveProject(false);
+                    rebuildOverlay();
+                    refreshStrip();
+                    toast(gesture[0] == 1 ? "Text start trimmed"
+                            : gesture[0] == 2 ? "Text duration trimmed" : "Text layer moved");
+                    return true;
+                case MotionEvent.ACTION_CANCEL:
+                    view.setTranslationX(0f);
+                    view.setAlpha(1f);
+                    return true;
+                default:
+                    return true;
+            }
+        });
     }
 
     private void installTimelineDrag(View block, LongConsumer onMoved) {
