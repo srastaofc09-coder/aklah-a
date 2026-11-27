@@ -41,6 +41,8 @@ public class ProjectStore {
                                 c.getLong("end"));
                         clip.muted = c.optBoolean("muted", false);
                         clip.volume = (float) c.optDouble("volume", 1.0);
+                        clip.voicePitch = (float) c.optDouble("voicePitch", 1.0);
+                        clip.voiceEnhancer = c.optBoolean("voiceEnhancer", false);
                         clip.fadeInMs = c.optLong("fadeInMs", 0L);
                         clip.fadeOutMs = c.optLong("fadeOutMs", 0L);
                         clip.rotationDegrees = c.optInt("rotation", 0);
@@ -144,6 +146,8 @@ public class ProjectStore {
                     co.put("end", c.endMs);
                     co.put("muted", c.muted);
                     co.put("volume", c.volume);
+                    co.put("voicePitch", c.voicePitch);
+                    co.put("voiceEnhancer", c.voiceEnhancer);
                     co.put("fadeInMs", c.fadeInMs);
                     co.put("fadeOutMs", c.fadeOutMs);
                     co.put("rotation", c.rotationDegrees);
