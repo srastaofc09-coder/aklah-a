@@ -971,7 +971,8 @@ public class EditorActivity extends AppCompatActivity {
                 "Duplicate Text", "Text Alignment", "Text Start", "Text End",
                 "Reset Clip Trim", "Reverse Timeline", "Mute All Clips",
                 "Unmute All Clips", "First Clip", "Next Clip", "ADVANCED CLIP LAB",
-                "Duplicate Clip × N", "Move Clip to Start", "Move Clip to End", "Keep Selected Only"
+                "Duplicate Clip × N", "Move Clip to Start", "Move Clip to End", "Keep Selected Only",
+                "Set All Clip Speed", "Copy Transition to All", "Reset All Clip Visuals", "Set All Clip Volume"
         };
         final String[] subtitles = {
                 "Copy selected overlay", "Cycle left / center / right",
@@ -979,10 +980,12 @@ public class EditorActivity extends AppCompatActivity {
                 "Restore full clip", "Reverse clip order",
                 "Turn off clip audio", "Restore clip audio",
                 "Jump to beginning", "Move to next clip", "Rotate • crop • speed • color",
-                "Create multiple copies", "Reorder selected clip", "Reorder selected clip", "Remove other clips"
+                "Create multiple copies", "Reorder selected clip", "Reorder selected clip", "Remove other clips",
+                "Set speed for every video clip", "Use selected clip's transition everywhere",
+                "Clear visual edits across the project", "Set shared volume for all clips"
         };
-        final String[] icons = {"⧉", "↔", "◷", "◴", "⟲", "⇄", "🔇", "🔊", "⏮", "⏭", "✦", "⧉×", "⇤", "⇥", "✓"};
-        final int[] actions = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
+        final String[] icons = {"⧉", "↔", "◷", "◴", "⟲", "⇄", "🔇", "🔊", "⏮", "⏭", "✦", "⧉×", "⇤", "⇥", "✓", "⏩", "↔", "◌", "🔉"};
+        final int[] actions = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18};
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -2145,7 +2148,90 @@ public class EditorActivity extends AppCompatActivity {
             case 12: moveSelectedClipToEdge(true); break;
             case 13: moveSelectedClipToEdge(false); break;
             case 14: keepOnlySelectedClip(); break;
+            case 15: setAllClipSpeed(); break;
+            case 16: copySelectedTransitionToAll(); break;
+            case 17: resetAllClipVisuals(); break;
+            case 18: setAllClipVolume(); break;
         }
+    }
+
+    private void setAllClipSpeed() {
+        if (clips.isEmpty()) { toast("Timeline mein clips nahi hain"); return; }
+        android.widget.EditText input = new android.widget.EditText(this);
+        input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        input.setHint("Speed 0.25 - 4.0"); input.setText("1.0");
+        new AlertDialog.Builder(this).setTitle("Set Speed for All Clips")
+                .setMessage("Playback speed sabhi video clips par apply hogi.")
+                .setView(input).setNegativeButton("Cancel", null)
+                .setPositiveButton("Apply", (d,w) -> {
+                    float speed;
+                    try { speed = Float.parseFloat(input.getText().toString()); } catch(Exception e) { speed = 0f; }
+                    if (Float.isNaN(speed) || Float.isInfinite(speed) || speed < 0.25f || speed > 4f) {
+                        toast("Speed 0.25 se 4.0 ke beech choose karein"); return;
+                    }
+                    pushUndo();
+                    for (ClipItem clip : clips) clip.speed = speed;
+                    saveProject(false); refreshStrip();
+                    toast("All clips speed set: " + speed + "x");
+                }).show();
+    }
+
+    private void copySelectedTransitionToAll() {
+        ClipItem selected = selectedClip();
+        if (selected == null || clips.isEmpty()) { toast("Pehle clip select karein"); return; }
+        final int type = selected.transitionType;
+        final long duration = selected.transitionDurationMs;
+        pushUndo();
+        for (ClipItem clip : clips) {
+            clip.transitionType = type;
+            clip.transitionDurationMs = Math.max(0L, Math.min(3000L, duration));
+        }
+        saveProject(false); refreshStrip();
+        toast("Selected transition sabhi clips par apply ho gaya");
+    }
+
+    private void resetAllClipVisuals() {
+        if (clips.isEmpty()) return;
+        new AlertDialog.Builder(this).setTitle("Reset All Clip Visuals?")
+                .setMessage("Color, filter, crop, rotation, blur, mask, keyframe motion aur visual effects reset honge. Trim aur audio settings safe rahengi.")
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Reset Visuals", (d,w) -> {
+                    pushUndo();
+                    for (ClipItem clip : clips) {
+                        clip.rotationDegrees = 0; clip.cropMode = 0;
+                        clip.opacity = 1f; clip.brightness = 0f; clip.contrast = 1f; clip.saturation = 1f;
+                        clip.flipX = false; clip.flipY = false; clip.blurSigma = 0f; clip.filterStrength = 1f;
+                        clip.redScale = 1f; clip.greenScale = 1f; clip.blueScale = 1f;
+                        clip.maskEnabled = false; clip.maskMode = 0;
+                        clip.maskX = 0.25f; clip.maskY = 0.25f; clip.maskWidth = 0.5f; clip.maskHeight = 0.5f;
+                        clip.keyStartScale = 1f; clip.keyEndScale = 1f;
+                        clip.keyStartRotation = 0f; clip.keyEndRotation = 0f;
+                        clip.keyStartX = 0.5f; clip.keyStartY = 0.5f; clip.keyEndX = 0.5f; clip.keyEndY = 0.5f;
+                        clip.keyStartMs = 0L; clip.keyEndMs = 1000L; clip.keyEasing = 0;
+                    }
+                    saveProject(false); refreshStrip();
+                    toast("All clip visual edits reset; trims/audio retained");
+                }).show();
+    }
+
+    private void setAllClipVolume() {
+        if (clips.isEmpty()) return;
+        SeekBar seek = new SeekBar(this); seek.setMax(100); seek.setProgress(100);
+        TextView label = new TextView(this); label.setText("Volume: 100%");
+        seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            public void onProgressChanged(SeekBar b,int value,boolean fromUser) { label.setText("Volume: "+value+"%"); }
+            public void onStartTrackingTouch(SeekBar b) {}
+            public void onStopTrackingTouch(SeekBar b) {}
+        });
+        LinearLayout box = new LinearLayout(this); box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(16),dp(8),dp(16),dp(4)); box.addView(label); box.addView(seek);
+        new AlertDialog.Builder(this).setTitle("Set All Clip Volume").setView(box)
+                .setNegativeButton("Cancel",null).setPositiveButton("Apply",(d,w)->{
+                    float volume=seek.getProgress()/100f; pushUndo();
+                    for(ClipItem clip:clips) clip.volume=volume;
+                    applyCurrentClipAudio(); saveProject(false); refreshStrip();
+                    toast("All clips volume: "+seek.getProgress()+"%");
+                }).show();
     }
 
     private void duplicateClipMultiple() {
