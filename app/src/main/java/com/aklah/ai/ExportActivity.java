@@ -356,7 +356,8 @@ public class ExportActivity extends AppCompatActivity {
             long clipDurationUs = c.endMs > c.startMs
                     ? (c.endMs - c.startMs) * 1000L : C.TIME_UNSET;
             boolean hasAudioAutomation = c.volume < 0.999f
-                    || c.fadeInMs > 0L || c.fadeOutMs > 0L;
+                    || c.fadeInMs > 0L || c.fadeOutMs > 0L
+                    || c.voiceEnhancer || Math.abs(c.voicePitch - 1f) > 0.001f;
             if (!c.muted && hasAudioAutomation) {
                 long fadeInUs = c.fadeInMs * 1000L;
                 long fadeOutUs = c.fadeOutMs * 1000L;
@@ -369,10 +370,14 @@ public class ExportActivity extends AppCompatActivity {
                 audio.add(new ClipAudioProcessor(c.volume, fadeInUs,
                         fadeOutUs, clipDurationUs));
             }
-            if (Math.abs(c.speed - 1f) > 0.001f) {
+            if (c.voiceEnhancer) {
+                audio.add(new OfflineVoiceEnhancer());
+            }
+            if (Math.abs(c.speed - 1f) > 0.001f
+                    || Math.abs(c.voicePitch - 1f) > 0.001f) {
                 SonicAudioProcessor sonic = new SonicAudioProcessor();
                 sonic.setSpeed(c.speed);
-                sonic.setPitch(1f);
+                sonic.setPitch(c.voicePitch);
                 audio.add(sonic);
             }
             if (!video.isEmpty() || !audio.isEmpty()) {
