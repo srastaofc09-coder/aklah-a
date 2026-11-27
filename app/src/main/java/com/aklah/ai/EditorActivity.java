@@ -1907,6 +1907,60 @@ public class EditorActivity extends AppCompatActivity {
         offset.setInputType(8194);
         offset.setText(String.valueOf(track.startMs / 1000f));
         panel.addView(offset);
+
+        final long sourceDurationMs = Math.max(1L, getMediaDurationMs(track.uri));
+        TextView trimLabel = new TextView(this);
+        trimLabel.setTextColor(0xFFFFD66B);
+        long initialTrimEnd = track.trimEndMs > track.trimStartMs
+                ? Math.min(sourceDurationMs, track.trimEndMs) : sourceDurationMs;
+        trimLabel.setText("Source trim: " + (track.trimStartMs / 1000f)
+                + "s – " + (initialTrimEnd / 1000f) + "s");
+        SeekBar sourceStart = new SeekBar(this);
+        sourceStart.setMax(1000);
+        sourceStart.setProgress((int) Math.max(0, Math.min(1000,
+                track.trimStartMs * 1000L / sourceDurationMs)));
+        SeekBar sourceEnd = new SeekBar(this);
+        sourceEnd.setMax(1000);
+        sourceEnd.setProgress((int) Math.max(1, Math.min(1000,
+                initialTrimEnd * 1000L / sourceDurationMs)));
+        Runnable updateTrimLabel = () -> {
+            long start = sourceStart.getProgress() * sourceDurationMs / 1000L;
+            long end = sourceEnd.getProgress() * sourceDurationMs / 1000L;
+            trimLabel.setText("Source trim: " + (start / 1000f)
+                    + "s – " + (end / 1000f) + "s");
+        };
+        sourceStart.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar bar, int value, boolean fromUser) {
+                if (value >= sourceEnd.getProgress()) sourceEnd.setProgress(Math.min(1000, value + 1));
+                updateTrimLabel.run();
+            }
+            @Override public void onStartTrackingTouch(SeekBar bar) { }
+            @Override public void onStopTrackingTouch(SeekBar bar) { }
+        });
+        sourceEnd.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar bar, int value, boolean fromUser) {
+                if (value <= sourceStart.getProgress()) sourceStart.setProgress(Math.max(0, value - 1));
+                updateTrimLabel.run();
+            }
+            @Override public void onStartTrackingTouch(SeekBar bar) { }
+            @Override public void onStopTrackingTouch(SeekBar bar) { }
+        });
+        panel.addView(trimLabel);
+        panel.addView(new TextView(this) {{ setText("Source start"); setTextColor(0xFFFFFFFF); }});
+        panel.addView(sourceStart);
+        panel.addView(new TextView(this) {{ setText("Source end"); setTextColor(0xFFFFFFFF); }});
+        panel.addView(sourceEnd);
+        addButton(panel, "Duplicate track (+1 sec)", () -> {
+            pushUndo();
+            AudioTrackItem duplicate = track.copy();
+            duplicate.startMs = Math.min(3600000L, track.startMs + 1000L);
+            project.audioTracks.add(duplicate);
+            saveProject(false);
+            refreshStrip();
+            renderTimelineLayerLanes();
+            toast("Audio track duplicated");
+        });
+
         SeekBar volume = new SeekBar(this);
         volume.setMax(100);
         volume.setProgress(Math.round(track.volume * 100f));
@@ -1968,6 +2022,11 @@ public class EditorActivity extends AppCompatActivity {
                 .setPositiveButton("Save", (d, w) -> {
                     pushUndo();
                     track.volume = volume.getProgress() / 100f;
+                    track.trimStartMs = sourceStart.getProgress() * sourceDurationMs / 1000L;
+                    track.trimEndMs = sourceEnd.getProgress() * sourceDurationMs / 1000L;
+                    if (track.trimEndMs <= track.trimStartMs) {
+                        track.trimEndMs = Math.min(sourceDurationMs, track.trimStartMs + 100L);
+                    }
                     track.fadeInMs = fadeIn.getProgress() * 100L;
                     track.fadeOutMs = fadeOut.getProgress() * 100L;
                     try { track.startMs = Math.max(0L, Math.min(3600000L,
