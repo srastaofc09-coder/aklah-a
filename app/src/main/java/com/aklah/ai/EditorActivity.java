@@ -2236,11 +2236,13 @@ public class EditorActivity extends AppCompatActivity {
             block.setBackground(roundRect(track.muted ? 0xFF292D32 : 0xFF174238,
                     0xFF3E8876, 1, 8));
             long duration = getMediaDurationMs(track.uri);
+            float pixelsPerSecond = 32f * timelineZoom;
             int width = duration > 0
-                    ? (int) Math.max(dp(96), Math.min(dp(900), duration / 1000f * dp(32)))
+                    ? (int) Math.max(dp(96), Math.min(dp(1800),
+                            duration / 1000f * dp(pixelsPerSecond)))
                     : dp(180);
-            int offset = (int) Math.max(0, Math.min(dp(1600),
-                    track.startMs / 1000f * dp(32)));
+            int offset = (int) Math.max(0, Math.min(dp(12000),
+                    track.startMs / 1000f * dp(pixelsPerSecond)));
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(width, dp(36));
             lp.setMargins(offset, 0, dp(5), 0);
             audioContent.addView(block, lp);
@@ -2265,10 +2267,11 @@ public class EditorActivity extends AppCompatActivity {
             block.setBackground(roundRect(0xFF3A2D16, 0xFFB18A3C, 1, 8));
             long duration = layer.endMs > layer.startMs
                     ? layer.endMs - layer.startMs : 3000L;
-            int width = (int) Math.max(dp(90), Math.min(dp(900),
-                    duration / 1000f * dp(32)));
-            int offset = (int) Math.max(0, Math.min(dp(1600),
-                    layer.startMs / 1000f * dp(32)));
+            float pixelsPerSecond = 32f * timelineZoom;
+            int width = (int) Math.max(dp(90), Math.min(dp(1800),
+                    duration / 1000f * dp(pixelsPerSecond)));
+            int offset = (int) Math.max(0, Math.min(dp(12000),
+                    layer.startMs / 1000f * dp(pixelsPerSecond)));
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(width, dp(36));
             lp.setMargins(offset, 0, dp(5), 0);
             textContent.addView(block, lp);
@@ -2347,8 +2350,11 @@ public class EditorActivity extends AppCompatActivity {
                 case MotionEvent.ACTION_UP:
                     if (moved[0]) {
                         float density = getResources().getDisplayMetrics().density;
-                        long deltaMs = Math.round((lastDx[0] / density) / 32f * 1000f);
+                        float pixelsPerSecond = Math.max(1f, 32f * timelineZoom);
+                        long deltaMs = Math.round((lastDx[0] / density)
+                                / pixelsPerSecond * 1000f);
                         view.setTranslationX(0f);
+                        pushUndo();
                         onMoved.accept(deltaMs);
                         saveProject(false);
                         refreshStrip();
