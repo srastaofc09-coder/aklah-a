@@ -93,7 +93,7 @@ public class AIStudioActivity extends AppCompatActivity {
             toast("Pollinations key phone par save ho gayi");
         });
         body.addView(savePollinations);
-        body.addView(text("Free usage may be limited; check provider balance and key budget before generating.", 12, 0xffaab6d2, false));
+        body.addView(text("Free/Quest credits are limited. Check Pollinations model price and set a small key budget before generating.", 12, 0xffaab6d2, false));
         promptBox = new EditText(this);
         promptBox.setTextColor(0xffffffff);
         promptBox.setHintTextColor(0xff929bb0);
@@ -186,7 +186,7 @@ public class AIStudioActivity extends AppCompatActivity {
         runTask("Pollinations AI video generate ho rahi hai; kuch waqt lag sakta hai...", () -> {
             String key = pollinationsKey();
             String url = "https://gen.pollinations.ai/video/" + java.net.URLEncoder.encode(prompt, "UTF-8")
-                    + "?model=google/veo-3.1-fast&duration=6&safe=true";
+                    + "?model=kandinskylab/kandinsky-6.0-lite&duration=6&safe=true";
             byte[] bytes = fetchMedia(url, key, 300000);
             if (bytes.length < 1000) throw new Exception("Video response bahut chhoti/invalid hai");
             latestVideoBytes = bytes;
