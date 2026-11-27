@@ -111,8 +111,9 @@ public final class FableVideoMaker {
     private static JSONObject readJson(HttpURLConnection c) throws Exception {
         int code = c.getResponseCode();
         InputStream in = code >= 200 && code < 300 ? c.getInputStream() : c.getErrorStream();
-        byte[] bytes;
-        try (InputStream stream = in) { bytes = stream == null ? new byte[0] : stream.readAllBytes(); }
+        java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
+        if (in != null) try (InputStream stream = in) { byte[] chunk = new byte[8192]; int n; while ((n = stream.read(chunk)) != -1) buffer.write(chunk, 0, n); }
+        byte[] bytes = buffer.toByteArray();
         c.disconnect();
         String text = new String(bytes, StandardCharsets.UTF_8);
         if (code < 200 || code >= 300) throw new Exception("Video backend HTTP " + code + ": " + text.substring(0, Math.min(600, text.length())));
