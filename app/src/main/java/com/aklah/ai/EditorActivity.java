@@ -1644,9 +1644,21 @@ public class EditorActivity extends AppCompatActivity {
         SeekBar saturation = new SeekBar(this);
         saturation.setMax(200);
         saturation.setProgress(Math.round(clip.saturation * 100f));
+        SeekBar red = new SeekBar(this);
+        red.setMax(200);
+        red.setProgress(Math.round(clip.redScale * 100f));
+        SeekBar green = new SeekBar(this);
+        green.setMax(200);
+        green.setProgress(Math.round(clip.greenScale * 100f));
+        SeekBar blue = new SeekBar(this);
+        blue.setMax(200);
+        blue.setProgress(Math.round(clip.blueScale * 100f));
         addColorControl(root, "Brightness", brightness);
         addColorControl(root, "Contrast", contrast);
         addColorControl(root, "Saturation", saturation);
+        addColorControl(root, "Red channel", red);
+        addColorControl(root, "Green channel", green);
+        addColorControl(root, "Blue channel", blue);
         new AlertDialog.Builder(this)
                 .setTitle("Color Adjustments")
                 .setView(root)
@@ -1655,7 +1667,9 @@ public class EditorActivity extends AppCompatActivity {
                     clip.brightness = brightness.getProgress() / 100f - 1f;
                     clip.contrast = contrast.getProgress() / 100f;
                     clip.saturation = saturation.getProgress() / 100f;
-                    clip.redScale = 1f; clip.greenScale = 1f; clip.blueScale = 1f;
+                    clip.redScale = red.getProgress() / 100f;
+                    clip.greenScale = green.getProgress() / 100f;
+                    clip.blueScale = blue.getProgress() / 100f;
                     saveProject(false);
                     toast("Color adjustments save ho gaye; export par apply honge");
                 })
