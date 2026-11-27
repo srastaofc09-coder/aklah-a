@@ -140,9 +140,16 @@ public class EditorActivity extends AppCompatActivity {
         addButton(r2, "Redo", () -> redo());
         addButton(r4, "+ Text", () -> addText());
         addButton(r4, "Text Edit", () -> chooseTextToEdit());
+        addButton(r4, "Text Styles", () -> chooseTextForPreset());
+        addButton(r4, "Sticker", () -> chooseSticker());
+        addButton(r4, "Shape", () -> chooseShape());
         LinearLayout r5 = findViewById(R.id.row5);
         addButton(r5, "Duplicate Clip", () -> duplicateClip());
         addButton(r5, "Mute / Unmute", () -> toggleClipMute());
+        addButton(r5, "Clip Volume", () -> { ClipItem c = selectedClip(); if (c != null) chooseClipVolume(c); });
+        addButton(r5, "Fade In", () -> { ClipItem c = selectedClip(); if (c != null) chooseClipFade(c, true); });
+        addButton(r5, "Fade Out", () -> { ClipItem c = selectedClip(); if (c != null) chooseClipFade(c, false); });
+        addButton(r5, "Voice FX", () -> { ClipItem c = selectedClip(); if (c != null) chooseVoiceChanger(c); });
         LinearLayout r6 = findViewById(R.id.row6);
         // Direct clip-tool shortcuts replace the old generic Advanced Manual Tools dialog.
         addButton(r6, "Crop / Ratio", () -> { ClipItem c = selectedClip(); if (c != null) chooseCropMode(c); });
