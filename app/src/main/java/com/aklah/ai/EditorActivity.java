@@ -77,6 +77,8 @@ public class EditorActivity extends AppCompatActivity {
     private MediaRecorder voiceRecorder;
     private File voiceRecordingFile;
     private boolean voiceRecording = false;
+    private long voiceRecordingStartMs = 0L;
+    private TextView voiceRecordButton;
 
     private final List<TextLayer> texts = new ArrayList<>();
     private final List<TextView> textViews = new ArrayList<>();
@@ -1906,7 +1908,7 @@ public class EditorActivity extends AppCompatActivity {
         }
         voiceRecordingFile = new File(directory, "voiceover_" + System.currentTimeMillis() + ".m4a");
         try {
-            voiceRecorder = new MediaRecorder(this);
+            voiceRecorder = new MediaRecorder();
             voiceRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
             voiceRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
             voiceRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
@@ -1916,10 +1918,13 @@ public class EditorActivity extends AppCompatActivity {
             voiceRecorder.prepare();
             voiceRecorder.start();
             voiceRecording = true;
+            voiceRecordingStartMs = Math.max(0L, timelineMs());
+            if (voiceRecordButton != null) voiceRecordButton.setText("■\nSTOP VOICE-OVER");
             toast("Voice-over recording started — button dobara dabakar stop karein");
         } catch (Exception e) {
             releaseVoiceRecorder();
             voiceRecording = false;
+            if (voiceRecordButton != null) voiceRecordButton.setText("✦\nVoice-over REC");
             toast("Voice-over recording start nahi ho saki");
         }
     }
@@ -1927,6 +1932,7 @@ public class EditorActivity extends AppCompatActivity {
     private void finishVoiceRecording() {
         if (!voiceRecording) return;
         voiceRecording = false;
+        if (voiceRecordButton != null) voiceRecordButton.setText("✦\nVoice-over REC");
         boolean saved = false;
         try {
             if (voiceRecorder != null) {
@@ -1942,7 +1948,7 @@ public class EditorActivity extends AppCompatActivity {
         if (saved && project != null) {
             pushUndo();
             AudioTrackItem track = new AudioTrackItem(Uri.fromFile(voiceRecordingFile).toString());
-            track.startMs = Math.max(0L, timelineMs());
+            track.startMs = Math.max(0L, voiceRecordingStartMs);
             project.audioTracks.add(track);
             saveProject(false);
             renderTimelineLayerLanes();
@@ -2825,6 +2831,7 @@ public class EditorActivity extends AppCompatActivity {
         else if (label.contains("Export")) icon = "▶";
 
         TextView b = new TextView(this);
+        if (label.contains("Voice-over")) voiceRecordButton = b;
         b.setText(icon + "\n" + label);
         b.setGravity(Gravity.CENTER);
         b.setTextSize(11);
