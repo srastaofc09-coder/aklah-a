@@ -141,6 +141,15 @@ public class TextDialog {
         final int[] align = {layer.align};
         root.addView(chips(ctx, new String[]{"Left", "Center", "Right"}, align));
 
+        // Text animation presets and timing
+        root.addView(label(ctx, "Text Animation (export mein apply hoga)"));
+        final int[] animationMode = {Math.max(0, Math.min(4, layer.animationMode))};
+        root.addView(chips(ctx, new String[]{"None", "Fade", "Slide", "Zoom", "In/Out"}, animationMode));
+        root.addView(label(ctx, "Animation duration (ms)"));
+        final EditText animationDuration = numberField(ctx, "Duration ms",
+                String.valueOf(Math.max(100L, Math.min(5000L, layer.animationDurationMs))));
+        root.addView(animationDuration);
+
         // Time
         root.addView(label(ctx, "Kab dikhe? (project timeline ke seconds)"));
         LinearLayout timeRow = new LinearLayout(ctx);
@@ -204,6 +213,11 @@ public class TextDialog {
             layer.shadow = cbShadow.isChecked();
             layer.rtl = cbRtl.isChecked();
             layer.align = align[0];
+            layer.animationMode = animationMode[0];
+            try {
+                layer.animationDurationMs = Math.max(100L, Math.min(5000L,
+                        Long.parseLong(animationDuration.getText().toString().trim())));
+            } catch (Exception ignored) { layer.animationDurationMs = 600L; }
             layer.startMs = (long) (start * 1000);
             layer.endMs = end < 0 ? -1 : (long) (end * 1000);
             dialog.dismiss();
