@@ -1916,15 +1916,15 @@ public class EditorActivity extends AppCompatActivity {
         trimLabel.setText("Source trim: " + (track.trimStartMs / 1000f)
                 + "s – " + (initialTrimEnd / 1000f) + "s");
         SeekBar sourceStart = new SeekBar(this);
-        sourceStart.setMax(1000);
+        sourceStart.setMax(999);
         sourceStart.setProgress((int) Math.max(0, Math.min(1000,
-                track.trimStartMs * 1000L / sourceDurationMs)));
+                track.trimStartMs * 999L / sourceDurationMs)));
         SeekBar sourceEnd = new SeekBar(this);
         sourceEnd.setMax(1000);
         sourceEnd.setProgress((int) Math.max(1, Math.min(1000,
                 initialTrimEnd * 1000L / sourceDurationMs)));
         Runnable updateTrimLabel = () -> {
-            long start = sourceStart.getProgress() * sourceDurationMs / 1000L;
+            long start = sourceStart.getProgress() * sourceDurationMs / 999L;
             long end = sourceEnd.getProgress() * sourceDurationMs / 1000L;
             trimLabel.setText("Source trim: " + (start / 1000f)
                     + "s – " + (end / 1000f) + "s");
