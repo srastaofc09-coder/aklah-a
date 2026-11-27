@@ -12,6 +12,7 @@ import android.os.Looper;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -51,6 +52,8 @@ public class EditorActivity extends AppCompatActivity {
     private final Deque<List<ClipItem>> undoStack = new ArrayDeque<>();
     private final Deque<List<ClipItem>> redoStack = new ArrayDeque<>();
     private LinearLayout strip;
+    private float timelineZoom = 1f;
+    private ScaleGestureDetector timelineScaleDetector;
 
     private final List<TextLayer> texts = new ArrayList<>();
     private final List<TextView> textViews = new ArrayList<>();
@@ -104,6 +107,17 @@ public class EditorActivity extends AppCompatActivity {
 
         ((TextView) findViewById(R.id.tvEditorTitle)).setText(project.name);
         strip = findViewById(R.id.clipStrip);
+        timelineScaleDetector = new ScaleGestureDetector(this, new ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            @Override public boolean onScale(ScaleGestureDetector detector) {
+                timelineZoom = Math.max(0.55f, Math.min(3.5f, timelineZoom * detector.getScaleFactor()));
+                refreshStrip();
+                return true;
+            }
+        });
+        strip.setOnTouchListener((view, event) -> {
+            if (timelineScaleDetector != null) timelineScaleDetector.onTouchEvent(event);
+            return false;
+        });
         overlay = findViewById(R.id.textOverlay);
 
         findViewById(R.id.btnUndoTop).setOnClickListener(v -> undo());
@@ -131,6 +145,8 @@ public class EditorActivity extends AppCompatActivity {
         LinearLayout r3 = findViewById(R.id.row3);
         LinearLayout r4 = findViewById(R.id.row4);
         addButton(r1, "Split", () -> splitClip());
+        addButton(r1, "Zoom +", () -> zoomTimeline(1.2f));
+        addButton(r1, "Zoom -", () -> zoomTimeline(1f / 1.2f));
         addButton(r1, "Trim Start", () -> trimStart());
         addButton(r1, "Trim End", () -> trimEnd());
         addButton(r1, "Delete", () -> deleteClip());
@@ -1898,6 +1914,11 @@ public class EditorActivity extends AppCompatActivity {
         return String.format(Locale.ROOT, "%02d:%02d", seconds / 60L, seconds % 60L);
     }
 
+    private void zoomTimeline(float factor) {
+        timelineZoom = Math.max(0.55f, Math.min(3.5f, timelineZoom * factor));
+        refreshStrip();
+    }
+
     private void refreshStrip() {
         if (strip == null) {
             return;
@@ -1917,7 +1938,7 @@ public class EditorActivity extends AppCompatActivity {
             t.setBackgroundResource(on ? R.drawable.bg_button_gold : R.drawable.bg_card);
             t.setTextColor(on ? 0xFF000000 : 0xFFD4AF37);
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                    (int) (110 * d), (int) (56 * d));
+                    (int) (110 * d * timelineZoom), (int) (56 * d));
             lp.setMargins((int) (3 * d), 0, (int) (3 * d), 0);
             t.setLayoutParams(lp);
             t.setOnClickListener(v -> {
