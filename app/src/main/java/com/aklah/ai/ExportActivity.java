@@ -287,6 +287,12 @@ public class ExportActivity extends AppCompatActivity {
                         long endMs = Math.max(startMs + 1L, c.keyEndMs);
                         float progress = Math.max(0f, Math.min(1f,
                                 (timeMs - startMs) / (float) (endMs - startMs)));
+                        switch (c.keyEasing) {
+                            case 1: progress = progress * progress; break;
+                            case 2: progress = 1f - (1f - progress) * (1f - progress); break;
+                            case 3: progress = progress * progress * (3f - 2f * progress); break;
+                            default: break;
+                        }
                         float scale = c.keyStartScale
                                 + (c.keyEndScale - c.keyStartScale) * progress;
                         float x = c.keyStartX + (c.keyEndX - c.keyStartX) * progress;

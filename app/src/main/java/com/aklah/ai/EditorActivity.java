@@ -21,6 +21,7 @@ import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.EditText;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -1119,11 +1120,18 @@ public class EditorActivity extends AppCompatActivity {
                         box.setOrientation(LinearLayout.VERTICAL);
                         android.widget.EditText start = new android.widget.EditText(this);
                         android.widget.EditText end = new android.widget.EditText(this);
+                        android.widget.EditText startTime = new android.widget.EditText(this);
+                        android.widget.EditText endTime = new android.widget.EditText(this);
                         android.widget.EditText startX = new android.widget.EditText(this);
                         android.widget.EditText startY = new android.widget.EditText(this);
                         android.widget.EditText endX = new android.widget.EditText(this);
                         android.widget.EditText endY = new android.widget.EditText(this);
                         start.setHint("Start scale (1.0)"); end.setHint("End scale (1.25)");
+                        startTime.setHint("Keyframe start time (seconds)");
+                        endTime.setHint("Keyframe end time (seconds)");
+                        startTime.setInputType(8194); endTime.setInputType(8194);
+                        startTime.setText(String.valueOf(c.keyStartMs / 1000f));
+                        endTime.setText(String.valueOf(c.keyEndMs / 1000f));
                         startX.setHint("Start X (0.5)"); startY.setHint("Start Y (0.5)");
                         endX.setHint("End X (0.5)"); endY.setHint("End Y (0.5)");
                         start.setInputType(8194); end.setInputType(8194);
@@ -1136,6 +1144,21 @@ public class EditorActivity extends AppCompatActivity {
                         endX.setText(String.valueOf(c.keyEndX));
                         endY.setText(String.valueOf(c.keyEndY));
                         box.addView(start); box.addView(end);
+                        box.addView(startTime); box.addView(endTime);
+                        TextView easingButton = new TextView(this);
+                        String[] easingNames = {"Linear", "Ease In", "Ease Out", "Ease In-Out"};
+                        easingButton.setText("Motion easing: " + easingNames[Math.max(0, Math.min(3, c.keyEasing))] + "  •  Tap to change");
+                        easingButton.setTextColor(0xFFFFD66B);
+                        easingButton.setPadding(12, 18, 12, 18);
+                        final int[] chosenEasing = {Math.max(0, Math.min(3, c.keyEasing))};
+                        easingButton.setOnClickListener(v -> new AlertDialog.Builder(this)
+                                .setTitle("Keyframe Easing")
+                                .setSingleChoiceItems(easingNames, chosenEasing[0], (dd, selectedEasing) -> {
+                                    chosenEasing[0] = selectedEasing;
+                                    easingButton.setText("Motion easing: " + easingNames[selectedEasing] + "  •  Tap to change");
+                                    dd.dismiss();
+                                }).show());
+                        box.addView(easingButton);
                         box.addView(startX); box.addView(startY);
                         box.addView(endX); box.addView(endY);
                         new AlertDialog.Builder(this).setTitle("Keyframe Scale & Position").setView(box)
@@ -1147,6 +1170,9 @@ public class EditorActivity extends AppCompatActivity {
                                         float y0 = Float.parseFloat(startY.getText().toString());
                                         float x1 = Float.parseFloat(endX.getText().toString());
                                         float y1 = Float.parseFloat(endY.getText().toString());
+                                        float t0 = Float.parseFloat(startTime.getText().toString());
+                                        float t1 = Float.parseFloat(endTime.getText().toString());
+                                        if (t0 < 0f || t1 <= t0) throw new IllegalArgumentException("Invalid keyframe timing");
                                         pushUndo();
                                         c.keyStartScale = Math.max(0.25f, Math.min(4f, s0));
                                         c.keyEndScale = Math.max(0.25f, Math.min(4f, s1));
@@ -1154,12 +1180,14 @@ public class EditorActivity extends AppCompatActivity {
                                         c.keyStartY = Math.max(0f, Math.min(1f, y0));
                                         c.keyEndX = Math.max(0f, Math.min(1f, x1));
                                         c.keyEndY = Math.max(0f, Math.min(1f, y1));
-                                        c.keyStartMs = 0L;
-                                        c.keyEndMs = Math.max(1000L, clipDurationMs(c));
+                                        long clipLen = Math.max(100L, clipDurationMs(c));
+                                        c.keyStartMs = Math.min(clipLen, Math.round(t0 * 1000f));
+                                        c.keyEndMs = Math.min(clipLen, Math.max(c.keyStartMs + 100L, Math.round(t1 * 1000f)));
+                                        c.keyEasing = chosenEasing[0];
                                         saveProject(false); refreshStrip();
-                                        toast("Keyframe scale/position saved and applied in export.");
+                                        toast("Keyframe scale, position, timing and easing saved for export.");
                                     } catch (Exception ex) {
-                                        toast("Scale 0.25-4 aur X/Y 0-1 values enter karein");
+                                        toast("Scale 0.25-4, X/Y 0-1 aur valid start/end seconds enter karein");
                                     }
                                 }).setNegativeButton("Cancel", null).show();
                     } else if (which == 2) {

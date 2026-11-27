@@ -32,6 +32,7 @@ public class ClipItem {
     public float keyStartScale = 1f, keyEndScale = 1f;
     public float keyStartX = 0.5f, keyStartY = 0.5f, keyEndX = 0.5f, keyEndY = 0.5f;
     public long keyStartMs = 0L, keyEndMs = 1000L;
+    public int keyEasing = 0; // 0 linear, 1 ease-in, 2 ease-out, 3 ease-in-out
 
     public ClipItem(String uri, long startMs, long endMs) {
         this.uri = uri;
@@ -65,7 +66,7 @@ public class ClipItem {
         copy.maskX = maskX; copy.maskY = maskY; copy.maskWidth = maskWidth; copy.maskHeight = maskHeight;
         copy.keyStartScale = keyStartScale; copy.keyEndScale = keyEndScale;
         copy.keyStartX = keyStartX; copy.keyStartY = keyStartY; copy.keyEndX = keyEndX; copy.keyEndY = keyEndY;
-        copy.keyStartMs = keyStartMs; copy.keyEndMs = keyEndMs;
+        copy.keyStartMs = keyStartMs; copy.keyEndMs = keyEndMs; copy.keyEasing = keyEasing;
         return copy;
     }
 }
