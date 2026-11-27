@@ -974,7 +974,7 @@ public class EditorActivity extends AppCompatActivity {
                 "Duplicate Clip × N", "Move Clip to Start", "Move Clip to End", "Keep Selected Only",
                 "Set All Clip Speed", "Copy Transition to All", "Reset All Clip Visuals", "Set All Clip Volume", "Copy Visual Grade to All",
                 "Copy Audio Treatment to All", "Set All Clips Opacity",
-                "Set All Clips Rotation", "Set All Clips Crop", "Toggle All Horizontal Flip", "Toggle All Vertical Flip"
+                "Set All Clips Rotation", "Set All Clips Crop", "Toggle All Horizontal Flip", "Toggle All Vertical Flip", "Bulk Color Correction"
         };
         final String[] subtitles = {
                 "Copy selected overlay", "Cycle left / center / right",
@@ -986,10 +986,10 @@ public class EditorActivity extends AppCompatActivity {
                 "Set speed for every video clip", "Use selected clip's transition everywhere",
                 "Clear visual edits across the project", "Set shared volume for all clips",
                 "Copy color/filter/blur settings", "Copy fades/voice/audio settings", "Set opacity for every clip",
-                "Apply rotation to every clip", "Set canvas crop for every clip", "Flip every clip left/right", "Flip every clip up/down"
+                "Apply rotation to every clip", "Set canvas crop for every clip", "Flip every clip left/right", "Flip every clip up/down", "Adjust brightness, contrast and saturation project-wide"
         };
-        final String[] icons = {"⧉", "↔", "◷", "◴", "⟲", "⇄", "🔇", "🔊", "⏮", "⏭", "✦", "⧉×", "⇤", "⇥", "✓", "⏩", "↔", "◌", "🔉", "🎨", "🎚", "◐", "⟳", "▣", "↔", "↕"};
-        final int[] actions = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25};
+        final String[] icons = {"⧉", "↔", "◷", "◴", "⟲", "⇄", "🔇", "🔊", "⏮", "⏭", "✦", "⧉×", "⇤", "⇥", "✓", "⏩", "↔", "◌", "🔉", "🎨", "🎚", "◐", "⟳", "▣", "↔", "↕", "🎨"};
+        final int[] actions = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26};
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -2163,7 +2163,42 @@ public class EditorActivity extends AppCompatActivity {
             case 23: setAllClipCrop(); break;
             case 24: toggleAllClipFlip(true); break;
             case 25: toggleAllClipFlip(false); break;
+            case 26: showBulkColorCorrection(); break;
         }
+    }
+
+    private void showBulkColorCorrection() {
+        if (clips.isEmpty()) { toast("Timeline mein clips nahi hain"); return; }
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(dp(18), dp(10), dp(18), dp(8));
+        SeekBar brightness = new SeekBar(this); brightness.setMax(200); brightness.setProgress(100);
+        SeekBar contrast = new SeekBar(this); contrast.setMax(200); contrast.setProgress(100);
+        SeekBar saturation = new SeekBar(this); saturation.setMax(200); saturation.setProgress(100);
+        addColorControl(root, "Brightness (-100 to +100)", brightness);
+        addColorControl(root, "Contrast (0 to 200)", contrast);
+        addColorControl(root, "Saturation (0 to 200)", saturation);
+        TextView hint = new TextView(this);
+        hint.setText("These values replace the three settings on every clip. Other color channels and filters remain unchanged.");
+        hint.setTextColor(0xFFB8BBC4); hint.setTextSize(11); root.addView(hint);
+        new AlertDialog.Builder(this).setTitle("Bulk Color Correction")
+                .setView(root).setNegativeButton("Cancel", null)
+                .setNeutralButton("Reset", (d,w) -> {
+                    pushUndo();
+                    for (ClipItem clip : clips) {
+                        clip.brightness = 0f; clip.contrast = 1f; clip.saturation = 1f;
+                    }
+                    saveProject(false); refreshStrip(); toast("Brightness, contrast and saturation reset on all clips");
+                }).setPositiveButton("Apply to All", (d,w) -> {
+                    float b = brightness.getProgress() / 100f - 1f;
+                    float c = contrast.getProgress() / 100f;
+                    float sat = saturation.getProgress() / 100f;
+                    pushUndo();
+                    for (ClipItem clip : clips) {
+                        clip.brightness = b; clip.contrast = c; clip.saturation = sat;
+                    }
+                    saveProject(false); refreshStrip(); toast("Bulk color correction applied to all clips");
+                }).show();
     }
 
     private void setAllClipRotation() {
