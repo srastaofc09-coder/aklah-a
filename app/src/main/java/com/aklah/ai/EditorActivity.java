@@ -40,6 +40,7 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.LongConsumer;
 
 public class EditorActivity extends AppCompatActivity {
 
@@ -1981,6 +1982,9 @@ public class EditorActivity extends AppCompatActivity {
             lp.setMargins(offset, 0, dp(5), 0);
             audioContent.addView(block, lp);
             block.setOnClickListener(v -> editAudioTrack(track));
+            installTimelineDrag(block, delta -> {
+                track.startMs = Math.max(0L, track.startMs + delta);
+            });
         }
 
         LinearLayout textContent = addTimelineLane(lanes, "T TEXT", 0xFFFFD66B,
@@ -2006,6 +2010,12 @@ public class EditorActivity extends AppCompatActivity {
             lp.setMargins(offset, 0, dp(5), 0);
             textContent.addView(block, lp);
             block.setOnClickListener(v -> editText(layer));
+            installTimelineDrag(block, delta -> {
+                long durationMs = layer.endMs > layer.startMs
+                        ? layer.endMs - layer.startMs : 3000L;
+                layer.startMs = Math.max(0L, layer.startMs + delta);
+                layer.endMs = layer.startMs + durationMs;
+            });
         }
     }
 
@@ -2049,6 +2059,47 @@ public class EditorActivity extends AppCompatActivity {
         scroll.addView(content, new HorizontalScrollView.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.MATCH_PARENT));
         return content;
+    }
+
+    private void installTimelineDrag(View block, LongConsumer onMoved) {
+        final float[] downX = new float[1];
+        final float[] lastDx = new float[1];
+        final boolean[] moved = new boolean[1];
+        final float touchSlop = dp(7);
+        block.setOnTouchListener((view, event) -> {
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    downX[0] = event.getRawX();
+                    lastDx[0] = 0f;
+                    moved[0] = false;
+                    return true;
+                case MotionEvent.ACTION_MOVE:
+                    float dx = event.getRawX() - downX[0];
+                    if (Math.abs(dx) > touchSlop) moved[0] = true;
+                    if (moved[0]) {
+                        lastDx[0] = dx;
+                        view.setTranslationX(dx);
+                    }
+                    return true;
+                case MotionEvent.ACTION_UP:
+                    if (moved[0]) {
+                        float density = getResources().getDisplayMetrics().density;
+                        long deltaMs = Math.round((lastDx[0] / density) / 32f * 1000f);
+                        view.setTranslationX(0f);
+                        onMoved.accept(deltaMs);
+                        saveProject(false);
+                        refreshStrip();
+                    } else {
+                        view.performClick();
+                    }
+                    return true;
+                case MotionEvent.ACTION_CANCEL:
+                    view.setTranslationX(0f);
+                    return true;
+                default:
+                    return true;
+            }
+        });
     }
 
     private long getMediaDurationMs(String uri) {
