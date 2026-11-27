@@ -1769,26 +1769,56 @@ public class EditorActivity extends AppCompatActivity {
         LinearLayout panel = new LinearLayout(this);
         panel.setOrientation(LinearLayout.VERTICAL);
         panel.setPadding(dp(18), dp(12), dp(18), dp(8));
-        TextView label = new TextView(this);
-        label.setText("Track volume: " + Math.round(track.volume * 100f) + "%");
+        TextView volumeLabel = new TextView(this);
+        volumeLabel.setText("Volume: " + Math.round(track.volume * 100f) + "%");
+        volumeLabel.setTextColor(0xFFFFFFFF);
         android.widget.EditText offset = new android.widget.EditText(this);
-        offset.setHint("Track start offset in seconds (0 = beginning)");
+        offset.setHint("Track start offset in seconds");
         offset.setInputType(8194);
         offset.setText(String.valueOf(track.startMs / 1000f));
         panel.addView(offset);
-        label.setTextColor(0xFFFFFFFF);
         SeekBar volume = new SeekBar(this);
         volume.setMax(100);
         volume.setProgress(Math.round(track.volume * 100f));
         volume.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar bar, int value, boolean fromUser) {
-                label.setText("Track volume: " + value + "%");
+                volumeLabel.setText("Volume: " + value + "%");
             }
             @Override public void onStartTrackingTouch(SeekBar bar) { }
             @Override public void onStopTrackingTouch(SeekBar bar) { }
         });
-        panel.addView(label);
+        panel.addView(volumeLabel);
         panel.addView(volume);
+        TextView fadeInLabel = new TextView(this);
+        fadeInLabel.setText("Fade in: " + (track.fadeInMs / 1000f) + " sec");
+        fadeInLabel.setTextColor(0xFFFFD66B);
+        SeekBar fadeIn = new SeekBar(this);
+        fadeIn.setMax(600);
+        fadeIn.setProgress((int) Math.max(0, Math.min(600, track.fadeInMs / 100L)));
+        fadeIn.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar bar, int value, boolean fromUser) {
+                fadeInLabel.setText("Fade in: " + (value / 10f) + " sec");
+            }
+            @Override public void onStartTrackingTouch(SeekBar bar) { }
+            @Override public void onStopTrackingTouch(SeekBar bar) { }
+        });
+        panel.addView(fadeInLabel);
+        panel.addView(fadeIn);
+        TextView fadeOutLabel = new TextView(this);
+        fadeOutLabel.setText("Fade out: " + (track.fadeOutMs / 1000f) + " sec");
+        fadeOutLabel.setTextColor(0xFFFFD66B);
+        SeekBar fadeOut = new SeekBar(this);
+        fadeOut.setMax(600);
+        fadeOut.setProgress((int) Math.max(0, Math.min(600, track.fadeOutMs / 100L)));
+        fadeOut.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar bar, int value, boolean fromUser) {
+                fadeOutLabel.setText("Fade out: " + (value / 10f) + " sec");
+            }
+            @Override public void onStartTrackingTouch(SeekBar bar) { }
+            @Override public void onStopTrackingTouch(SeekBar bar) { }
+        });
+        panel.addView(fadeOutLabel);
+        panel.addView(fadeOut);
         new AlertDialog.Builder(this)
                 .setTitle("Audio track controls")
                 .setView(panel)
@@ -1800,19 +1830,22 @@ public class EditorActivity extends AppCompatActivity {
                 .setNegativeButton("Delete track", (d, w) -> {
                     project.audioTracks.remove(track);
                     saveProject(false);
+                    refreshStrip();
                     toast("Audio track removed");
                 })
                 .setPositiveButton("Save", (d, w) -> {
                     track.volume = volume.getProgress() / 100f;
+                    track.fadeInMs = fadeIn.getProgress() * 100L;
+                    track.fadeOutMs = fadeOut.getProgress() * 100L;
                     try { track.startMs = Math.max(0L, Math.min(3600000L,
                             (long) (Double.parseDouble(offset.getText().toString()) * 1000d))); }
                     catch (Exception ignored) { }
                     saveProject(false);
+                    refreshStrip();
                     manageAudioTracks();
                 })
                 .show();
     }
-
     private void saveProject(boolean show) {
         project.clips = snapshot();
         List<TextLayer> tl = new ArrayList<>();
