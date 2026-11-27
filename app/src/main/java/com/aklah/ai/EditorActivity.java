@@ -595,7 +595,7 @@ public class EditorActivity extends AppCompatActivity {
                 .setItems(tools, (dialog, which) -> {
                     switch (which) {
                         case 0: applySilhouetteGlowPreset(); break;
-                        case 1: addStyledOverlay("YOUR KEYWORD", 30, 0xFFFFD21F, 0xAA111111, 0.5f, 0.72f, 0); break;
+                        case 1: addKaraokeCaption(); break;
                         case 2: brollPicker.launch(new String[]{"video/*"}); break;
                         case 3: addStyledOverlay("💬  Your message here", 22, 0xFFFFFFFF, 0xDD17191F, 0.5f, 0.68f, 1); break;
                         case 4: addStyledOverlay("@yourhandle", 17, 0xCCFFFFFF, 0x44000000, 0.82f, 0.94f, 2); break;
@@ -605,6 +605,41 @@ public class EditorActivity extends AppCompatActivity {
                         case 8: showMoreTools(); break;
                     }
                 }).show();
+    }
+
+    private void addKaraokeCaption() {
+        long now = timelineMs();
+        TextLayer layer = new TextLayer("TYPE YOUR CAPTION");
+        layer.startMs = now;
+        layer.endMs = now + 3500L;
+        layer.sizeSp = 30;
+        layer.color = 0xFFFFD21F;
+        layer.bgColor = 0xAA111111;
+        layer.bold = true;
+        layer.shadow = true;
+        layer.align = 1;
+        layer.xFrac = 0.5f;
+        layer.yFrac = 0.72f;
+        layer.animationMode = 2;
+        layer.animationDurationMs = 450L;
+        TextDialog.show(this, layer, new TextDialog.Callback() {
+            @Override public void onSave(TextLayer updated) {
+                if (updated == null) return;
+                updated.startMs = now;
+                if (updated.endMs <= now) updated.endMs = now + 3500L;
+                updated.color = 0xFFFFD21F;
+                updated.bgColor = 0xAA111111;
+                updated.bold = true;
+                updated.align = 1;
+                updated.animationMode = 2;
+                updated.animationDurationMs = 450L;
+                texts.add(updated);
+                rebuildOverlay();
+                saveProject(false);
+                toast("Karaoke-style caption added • timing manually set karein");
+            }
+            @Override public void onDelete() { }
+        });
     }
 
     private void applySilhouetteGlowPreset() {
