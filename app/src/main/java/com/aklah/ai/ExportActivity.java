@@ -525,7 +525,8 @@ public class ExportActivity extends AppCompatActivity {
                     .build();
             long audioDurationUs = durationMs * 1000L;
             List<AudioProcessor> trackAudioEffects = new ArrayList<>();
-            trackAudioEffects.add(new ClipAudioProcessor(track.volume, 0L, 0L, audioDurationUs));
+            trackAudioEffects.add(new ClipAudioProcessor(track.volume,
+                    track.fadeInMs * 1000L, track.fadeOutMs * 1000L, audioDurationUs));
             EditedMediaItem audioEditedItem = new EditedMediaItem.Builder(audioMediaItem)
                     .setRemoveVideo(true)
                     .setEffects(new Effects(trackAudioEffects, Collections.emptyList()))
