@@ -118,6 +118,16 @@ public class AIStudioActivity extends AppCompatActivity {
         videoBtn = button("Generate AI Video (6 sec)");
         videoBtn.setOnClickListener(v -> generateVideo());
         body.addView(videoBtn);
+        Button localVideo = button("FREE Local Video Maker (6 sec)");
+        localVideo.setOnClickListener(v -> {
+            String idea = promptBox.getText().toString().trim();
+            if (idea.isEmpty()) { toast("Pehle video ka idea likho"); return; }
+            runTask("Phone par local video render ho rahi hai (free)...", () -> {
+                Uri saved = LocalVideoMaker.create(this, idea);
+                main.post(() -> result.setText("Free local video saved: " + saved + "\\nMovies/AKLAH AI mein check karo."));
+            });
+        });
+        body.addView(localVideo);
         Button saveVideo = button("Save Generated Video");
         saveVideo.setOnClickListener(v -> { if (latestVideoBytes == null) toast("Pehle AI video generate karo"); else { Uri saved = saveVideoBytes(latestVideoBytes); toast(saved == null ? "Video save nahi hui" : "Video Movies/AKLAH AI mein save ho gayi"); } });
         body.addView(saveVideo);
