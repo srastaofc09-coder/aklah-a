@@ -2249,7 +2249,12 @@ public class EditorActivity extends AppCompatActivity {
             block.setGravity(Gravity.CENTER);
             block.setBackground(roundRect(track.muted ? 0xFF292D32 : 0xFF174238,
                     0xFF3E8876, 1, 8));
-            long duration = getMediaDurationMs(track.uri);
+            long sourceDuration = getMediaDurationMs(track.uri);
+            long trimStart = Math.max(0L, track.trimStartMs);
+            long trimEnd = track.trimEndMs > trimStart
+                    ? Math.min(track.trimEndMs, sourceDuration > 0L ? sourceDuration : track.trimEndMs)
+                    : sourceDuration;
+            long duration = trimEnd > trimStart ? trimEnd - trimStart : sourceDuration;
             float pixelsPerSecond = 32f * timelineZoom;
             int width = duration > 0
                     ? (int) Math.max(dp(96), Math.min(dp(1800),
@@ -2279,8 +2284,14 @@ public class EditorActivity extends AppCompatActivity {
             block.setTextSize(10);
             block.setGravity(Gravity.CENTER);
             block.setBackground(roundRect(0xFF3A2D16, 0xFFB18A3C, 1, 8));
-            long duration = layer.endMs > layer.startMs
-                    ? layer.endMs - layer.startMs : 3000L;
+            long timelineDuration = totalTimelineDurationMs();
+            if (timelineDuration <= 0L || timelineDuration == C.TIME_UNSET) {
+                timelineDuration = 0L;
+                for (ClipItem clip : clips) timelineDuration += clipDurationMs(clip);
+            }
+            long effectiveEnd = layer.endMs > layer.startMs
+                    ? layer.endMs : Math.max(layer.startMs + 1000L, timelineDuration);
+            long duration = Math.max(1000L, effectiveEnd - layer.startMs);
             float pixelsPerSecond = 32f * timelineZoom;
             int width = (int) Math.max(dp(90), Math.min(dp(1800),
                     duration / 1000f * dp(pixelsPerSecond)));
@@ -2291,8 +2302,14 @@ public class EditorActivity extends AppCompatActivity {
             textContent.addView(block, lp);
             block.setOnClickListener(v -> editText(layer));
             installTimelineDrag(block, delta -> {
+                long timelineDuration = totalTimelineDurationMs();
+                if (timelineDuration <= 0L || timelineDuration == C.TIME_UNSET) {
+                    timelineDuration = 0L;
+                    for (ClipItem clip : clips) timelineDuration += clipDurationMs(clip);
+                }
                 long durationMs = layer.endMs > layer.startMs
-                        ? layer.endMs - layer.startMs : 3000L;
+                        ? layer.endMs - layer.startMs
+                        : Math.max(1000L, timelineDuration - layer.startMs);
                 layer.startMs = Math.max(0L, layer.startMs + delta);
                 layer.endMs = layer.startMs + durationMs;
             });
