@@ -48,6 +48,7 @@ public class ProjectStore {
                         clip.rotationDegrees = c.optInt("rotation", 0);
                         clip.cropMode = c.optInt("crop", 0);
                         clip.speed = (float) c.optDouble("speed", 1.0);
+                        clip.opacity = (float) c.optDouble("opacity", 1.0);
                         clip.brightness = (float) c.optDouble("brightness", 0.0);
                         clip.contrast = (float) c.optDouble("contrast", 1.0);
                         clip.saturation = (float) c.optDouble("saturation", 1.0);
@@ -158,6 +159,7 @@ public class ProjectStore {
                     co.put("rotation", c.rotationDegrees);
                     co.put("crop", c.cropMode);
                     co.put("speed", c.speed);
+                    co.put("opacity", c.opacity);
                     co.put("brightness", c.brightness);
                     co.put("contrast", c.contrast);
                     co.put("saturation", c.saturation);

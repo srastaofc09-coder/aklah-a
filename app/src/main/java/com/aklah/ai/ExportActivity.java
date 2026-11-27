@@ -30,6 +30,7 @@ import androidx.media3.effect.OverlaySettings;
 import androidx.media3.common.audio.AudioProcessor;
 import androidx.media3.common.audio.SonicAudioProcessor;
 import androidx.media3.effect.Presentation;
+import androidx.media3.effect.AlphaScale;
 import androidx.media3.effect.Brightness;
 import androidx.media3.effect.Contrast;
 import androidx.media3.effect.BitmapOverlay;
@@ -254,6 +255,9 @@ public class ExportActivity extends AppCompatActivity {
             EditedMediaItem.Builder eb = new EditedMediaItem.Builder(mi);
             eb.setRemoveAudio(c.muted);
             List<Effect> video = new ArrayList<>();
+            if (Math.abs(c.opacity - 1f) > 0.001f) {
+                video.add(new AlphaScale(Math.max(0f, Math.min(1f, c.opacity))));
+            }
 
             // Apply the transform when either rotation OR a flip is selected.
             // Previously flip-only edits were skipped because this block checked rotation alone.

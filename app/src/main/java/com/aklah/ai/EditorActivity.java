@@ -1015,7 +1015,7 @@ public class EditorActivity extends AppCompatActivity {
     private void showAdvancedManualBatch() {
         ClipItem clip = selectedClip();
         if (clip == null) return;
-        final String[] options = {"Clip Transition", "Keyframe Motion (start/end)", "Manual Mask / Face Cover", "Advanced Audio Controls", "Color Grading"};
+        final String[] options = {"Clip Transition", "Keyframe Motion (start/end)", "Manual Mask / Face Cover", "Advanced Audio Controls", "Color Grading", "Clip Opacity (0-100%)"};
         new AlertDialog.Builder(this).setTitle("ADVANCED MANUAL EDITING")
                 .setItems(options, (dialog, which) -> {
                     ClipItem c = selectedClip();
@@ -1107,6 +1107,35 @@ public class EditorActivity extends AppCompatActivity {
                         showAdvancedClipTools();
                     } else if (which == 4) {
                         showColorAdjustments(c);
+                    } else if (which == 5) {
+                        LinearLayout opacityBox = new LinearLayout(this);
+                        opacityBox.setOrientation(LinearLayout.VERTICAL);
+                        opacityBox.setPadding(24, 12, 24, 12);
+                        TextView opacityLabel = new TextView(this);
+                        opacityLabel.setText("Clip opacity: " + Math.round(c.opacity * 100f) + "%");
+                        SeekBar opacityBar = new SeekBar(this);
+                        opacityBar.setMax(100);
+                        opacityBar.setProgress(Math.round(Math.max(0f, Math.min(1f, c.opacity)) * 100f));
+                        opacityBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                            @Override public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
+                                opacityLabel.setText("Clip opacity: " + progress + "%");
+                            }
+                            @Override public void onStartTrackingTouch(SeekBar bar) { }
+                            @Override public void onStopTrackingTouch(SeekBar bar) { }
+                        });
+                        opacityBox.addView(opacityLabel);
+                        opacityBox.addView(opacityBar);
+                        new AlertDialog.Builder(this).setTitle("Clip Opacity")
+                                .setMessage("Transparency export mein apply hogi.")
+                                .setView(opacityBox)
+                                .setPositiveButton("Apply", (d, w) -> {
+                                    pushUndo();
+                                    c.opacity = opacityBar.getProgress() / 100f;
+                                    saveProject(false);
+                                    refreshStrip();
+                                    toast("Clip opacity saved; MP4 export par apply hogi");
+                                })
+                                .setNegativeButton("Cancel", null).show();
                     }
                 }).show();
     }
