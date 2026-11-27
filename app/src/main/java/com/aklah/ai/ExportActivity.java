@@ -3,6 +3,10 @@ package com.aklah.ai;
 import android.content.ContentValues;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Paint;
+import android.graphics.RectF;
 import android.graphics.Matrix;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -43,6 +47,9 @@ import androidx.media3.effect.GaussianBlur;
 import androidx.media3.effect.RgbAdjustment;
 import androidx.media3.effect.ScaleAndRotateTransformation;
 import androidx.media3.effect.SpeedChangeEffect;
+import androidx.media3.effect.OverlayEffect;
+import androidx.media3.effect.BitmapOverlay;
+import com.google.common.collect.ImmutableList;
 import androidx.media3.transformer.Composition;
 import androidx.media3.transformer.DefaultEncoderFactory;
 import androidx.media3.transformer.EditedMediaItem;
@@ -204,6 +211,25 @@ public class ExportActivity extends AppCompatActivity {
         return type != null && type.startsWith("video/");
     }
 
+    private Bitmap createPhotoPipBitmap() {
+        if (project == null || project.photoOverlayUri == null || project.photoOverlayUri.isEmpty()) return null;
+        Bitmap source = null;
+        try {
+            source = BitmapFactory.decodeStream(getContentResolver().openInputStream(Uri.parse(project.photoOverlayUri)));
+            if (source == null) return null;
+            int cw = 1280, ch = 720;
+            Bitmap out = Bitmap.createBitmap(cw, ch, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(out);
+            float maxW = cw * 0.28f, maxH = ch * 0.28f;
+            float scale = Math.min(maxW / source.getWidth(), maxH / source.getHeight());
+            float w = source.getWidth() * scale, h = source.getHeight() * scale, margin = 32f;
+            RectF dst = new RectF(cw - margin - w, ch - margin - h, cw - margin, ch - margin);
+            canvas.drawBitmap(source, null, dst, new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG));
+            return out;
+        } catch (Exception ignored) { return null; }
+        finally { if (source != null && !source.isRecycled()) source.recycle(); }
+    }
+
     private void startExport() {
         if (transformer != null) {
             return;
@@ -244,6 +270,7 @@ public class ExportActivity extends AppCompatActivity {
         int fpsId = rgFps.getCheckedRadioButtonId();
         int frameRate = fpsId == R.id.rb60fps ? 60 : 30;
 
+        Bitmap photoPipBitmap = createPhotoPipBitmap();
         List<EditedMediaItem> items = new ArrayList<>();
         for (ClipItem c : source) {
             if (!isVideo(c.uri)) {
@@ -264,6 +291,8 @@ public class ExportActivity extends AppCompatActivity {
             // 60 fps cannot create extra motion frames when the source is 30 fps.
             eb.setFrameRate(frameRate);
             List<Effect> video = new ArrayList<>();
+            if (photoPipBitmap != null) video.add(new OverlayEffect(ImmutableList.of(
+                    BitmapOverlay.createStaticBitmapOverlay(photoPipBitmap))));
             if (Math.abs(c.opacity - 1f) > 0.001f) {
                 video.add(new AlphaScale(Math.max(0f, Math.min(1f, c.opacity))));
             }

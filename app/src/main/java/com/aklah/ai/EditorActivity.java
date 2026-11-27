@@ -8,6 +8,7 @@ import android.os.Environment;
 import androidx.core.content.ContextCompat;
 import java.io.File;
 import android.graphics.Typeface;
+import android.widget.ImageView;
 import android.net.Uri;
 import android.content.ClipData;
 import android.provider.OpenableColumns;
@@ -85,6 +86,8 @@ public class EditorActivity extends AppCompatActivity {
     private final List<TextLayer> texts = new ArrayList<>();
     private final List<TextView> textViews = new ArrayList<>();
     private ActivityResultLauncher<String[]> brollPicker;
+    private ActivityResultLauncher<String[]> photoOverlayPicker;
+    private ImageView photoOverlayPreview;
     private FrameLayout overlay;
     private boolean dragging = false;
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -107,6 +110,16 @@ public class EditorActivity extends AppCompatActivity {
                     if (granted) startVoiceRecording();
                     else toast("Voice-over ke liye microphone permission zaroori hai");
                 });
+        photoOverlayPicker = registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
+            if (uri == null || project == null) return;
+            try { getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION); } catch (Exception ignored) { }
+            pushUndo();
+            project.photoOverlayUri = uri.toString();
+            showPhotoOverlayPreview();
+            saveProject(false);
+            refreshStrip();
+            toast("Photo PIP overlay add ho gaya; export mein bhi include hoga");
+        });
         brollPicker = registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
             if (uri == null || project == null) return;
             try { getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION); } catch (Exception ignored) { }
@@ -155,6 +168,13 @@ public class EditorActivity extends AppCompatActivity {
             return false;
         });
         overlay = findViewById(R.id.textOverlay);
+        photoOverlayPreview = new ImageView(this);
+        photoOverlayPreview.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        FrameLayout previewStageForPip = findViewById(R.id.previewStage);
+        FrameLayout.LayoutParams pipPreviewParams = new FrameLayout.LayoutParams(dp(112), dp(112), Gravity.RIGHT | Gravity.BOTTOM);
+        pipPreviewParams.setMargins(0, 0, dp(10), dp(10));
+        previewStageForPip.addView(photoOverlayPreview, pipPreviewParams);
+        showPhotoOverlayPreview();
 
         findViewById(R.id.btnUndoTop).setOnClickListener(v -> undo());
         findViewById(R.id.btnRedoTop).setOnClickListener(v -> redo());
@@ -223,6 +243,8 @@ public class EditorActivity extends AppCompatActivity {
         addButton(r7, "Canvas Ratio", () -> chooseCanvasRatio());
         addButton(r7, "Creator Studio", () -> showStudioTools());
         addButton(r7, "Subtitle", () -> addSubtitleAtPlayhead());
+        addButton(r7, "Photo Overlay / PIP", () -> choosePhotoOverlay());
+        addButton(r7, "Remove Photo PIP", () -> removePhotoOverlay());
         addButton(r7, "Audio Tracks", () -> manageAudioTracks());
         addButton(r7, "Voice-over REC", () -> toggleVoiceRecording());
         addButton(r7, "Keyframe / Transition", () -> showAdvancedManualBatch());
@@ -3041,6 +3063,25 @@ public class EditorActivity extends AppCompatActivity {
         if (show) {
             toast("Project save ho gaya");
         }
+    }
+
+    private void choosePhotoOverlay() {
+        if (photoOverlayPicker != null) photoOverlayPicker.launch(new String[]{"image/*"});
+    }
+
+    private void removePhotoOverlay() {
+        if (project == null || project.photoOverlayUri == null || project.photoOverlayUri.isEmpty()) {
+            toast("Photo PIP pehle add karein"); return;
+        }
+        pushUndo(); project.photoOverlayUri = ""; showPhotoOverlayPreview(); saveProject(false); refreshStrip();
+        toast("Photo PIP remove ho gaya");
+    }
+
+    private void showPhotoOverlayPreview() {
+        if (photoOverlayPreview == null) return;
+        String uri = project == null ? "" : project.photoOverlayUri;
+        if (uri == null || uri.isEmpty()) { photoOverlayPreview.setImageDrawable(null); photoOverlayPreview.setVisibility(View.GONE); return; }
+        photoOverlayPreview.setImageURI(Uri.parse(uri)); photoOverlayPreview.setVisibility(View.VISIBLE);
     }
 
     private void openExport() {
